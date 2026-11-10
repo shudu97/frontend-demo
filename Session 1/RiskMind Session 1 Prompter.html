@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RiskMind Session 1 Prompter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap">
+<!--
+  Teleprompter for "RiskMind Session 1.html" (keep both files in the same folder).
+  The captions come from "RiskMind Session1 Outline.html" in this folder. After the outline changes, rebuild from
+  the parent folder (RiskMind Video) with:   python3 -I build_prompter.py      (see README.md there)
+  Keys (in this window): → ↓ Space PageDown play the next beat · ← ↑ PageUp back one beat · Home restart
+    P pause / continue · R notes (Reference) · + / − text size · click a beat to replay it
+  Sync: BroadcastChannel 'rm-s1' between the two windows, plus postMessage when this page opened the presentation.
+  The presentation owns the clock; this page only sends commands and shows where the presentation is.
+-->
+<style>
+:root{
+  --bg:#0D131A; --panel:#141C25; --line:#253140; --fg:#F3F6F9; --mid:#AAB7C4; --dim:#64748A;
+  --accent:#62AEFF; --accent-soft:#132B45; --ok:#3FCF8E; --bad:#E06464; --warn:#F2B84B; --fs:34px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--fg);font-family:"DM Sans",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+.mono{font-family:"DM Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+header{display:flex;align-items:center;gap:18px;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--panel);font-size:14px;flex-wrap:wrap}
+.conn{display:flex;align-items:center;gap:8px;color:var(--mid)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--bad);flex:none}
+.conn.on .dot{background:var(--ok)}
+.where{font-weight:600}
+.where small{font-weight:400;color:var(--mid);margin-left:8px}
+.spacer{flex:1}
+button{font:inherit;font-size:13px;color:var(--fg);background:#1D2833;border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#06192C;font-weight:600}
+main{display:grid;grid-template-columns:minmax(0,1fr) 440px;min-height:0}
+#script{position:relative;overflow-y:auto;padding:20px 40px 75vh}
+.warn{background:#3A2A10;color:var(--warn);border:1px solid #5C4317;border-radius:8px;padding:10px 14px;font-size:14px;margin-bottom:12px;display:none}
+.slide-h{font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin:30px 0 8px;padding-top:12px;border-top:1px solid var(--line)}
+.warn+.slide-h{border-top:0;margin-top:4px}
+.beat{display:grid;grid-template-columns:62px minmax(0,1fr);gap:6px;padding:10px 14px;border-radius:10px;cursor:pointer;
+  color:var(--dim);font-size:calc(var(--fs)*.6);line-height:1.45}
+.beat:hover{background:#111922}
+.beat .num{font-size:13px;padding-top:.45em;color:var(--dim)}
+.beat.next{color:var(--mid)}
+.beat.cur{background:var(--accent-soft);color:var(--fg);font-size:var(--fs);line-height:1.42;padding:16px 18px;margin:6px 0}
+.beat.cur .num{color:var(--accent)}
+.status{display:none;font-size:14px;font-weight:600;letter-spacing:.02em;margin:0 0 8px;color:var(--accent)}
+.beat.cur .status{display:block}
+.status.done{color:var(--ok)}
+.ref{display:none;margin:14px 0 0;padding:0 0 0 14px;border-left:3px solid #2E4A6A;font-size:15.5px;line-height:1.5;color:var(--mid);list-style:none}
+.ref li{margin:3px 0}
+body.showref .beat.cur .ref{display:block}
+aside{border-left:1px solid var(--line);background:var(--panel);padding:16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+.pv{position:relative;width:100%;aspect-ratio:16/9;background:#fff;border-radius:6px;overflow:hidden}
+.pv iframe{position:absolute;left:0;top:0;width:1920px;height:1080px;border:0;transform-origin:0 0;pointer-events:none}
+.track{position:relative;height:16px;margin-top:8px;background:#0F161E;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.track .seg{position:absolute;top:0;bottom:0;background:#1E3B5C}
+.track .fill{position:absolute;top:0;bottom:0;left:0;background:var(--accent);opacity:.35}
+.track .tick{position:absolute;top:0;bottom:0;width:1px;background:#33465A}
+.times{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mid);margin-top:6px}
+.nextbox{font-size:15px;line-height:1.5;color:var(--mid);background:#0F161E;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.nextbox b{color:var(--fg);font-weight:600}
+.ctrls{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}
+.ctrls button{grid-column:span 4}
+.ctrls .q{grid-column:span 3}
+.keys{font-size:12.5px;color:var(--dim);line-height:1.9}
+kbd{font-family:"DM Mono",monospace;font-size:11.5px;color:var(--mid);background:#1D2833;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px}
+</style>
+</head>
+<body>
+<header>
+  <div class="conn" id="conn"><span class="dot"></span><span id="connTxt">Presentation not connected</span></div>
+  <button class="primary" id="bOpen">Open Presentation Window</button>
+  <div class="where" id="where">—</div>
+  <div class="spacer"></div>
+  <div class="mono" id="clock" title="Counts from the first play; Home resets it">⏱ 00:00</div>
+</header>
+<main>
+  <div id="script">
+    <div class="warn" id="warn"></div>
+  </div>
+  <aside>
+    <div>
+      <p class="lbl">Audience View</p>
+      <div class="pv" id="pv"><iframe id="mirror" src="RiskMind Session 1.html?export=1&amp;mirror=1" tabindex="-1" title="Preview"></iframe></div>
+      <div class="track" id="track"><div class="fill" id="fill"></div><div class="seg" id="seg"></div></div>
+      <div class="times mono"><span id="tNow">0.0s</span><span id="tEnd">—</span></div>
+    </div>
+    <div>
+      <p class="lbl">Up Next</p>
+      <div class="nextbox" id="nextbox">—</div>
+    </div>
+    <div class="ctrls">
+      <button id="bBack">← Back</button>
+      <button id="bPause">❚❚ Pause</button>
+      <button id="bNext">Next →</button>
+      <button class="q" id="bHome">⟲ Restart</button>
+      <button class="q" id="bRef">Notes R</button>
+      <button class="q" id="bSmall">A−</button>
+      <button class="q" id="bBig">A+</button>
+    </div>
+    <div class="keys">
+      <kbd>→</kbd> <kbd>↓</kbd> <kbd>Space</kbd> <kbd>PageDown</kbd> play the next beat<br>&emsp;(while playing: jump to the end of this beat)<br>
+      <kbd>←</kbd> <kbd>↑</kbd> <kbd>PageUp</kbd> back one beat<br>
+      <kbd>P</kbd> pause / resume&ensp; <kbd>Home</kbd> restart&ensp; <kbd>R</kbd> notes&ensp; <kbd>+</kbd> <kbd>−</kbd> text size<br>
+      Click any beat to replay it from the start<br>
+      Keep keyboard focus on this window (keys pressed in the presentation window sync back too)
+    </div>
+  </aside>
+</main>
+
+<script id="beats" type="application/json">{"source": "RiskMind Session1 Outline.html", "built": "2026-11-10 15:24", "slides": [{"title": "Cover and Course Structure", "subtitle": "", "beats": [{"n": "Cover", "t": 0.0, "caption": "Jun's Speech", "ref": ["The cover arcs become the progress bar of the course page."]}, {"n": "Course", "t": 2.2, "caption": "Jun's Speech", "ref": ["Session dates: Session 1 on November 12, Session 2 on November 23, Session 3 on November 30."]}]}, {"title": "GRM AI Vision and Strategy", "subtitle": "Why RiskMind Exists", "beats": [{"n": 1, "t": 3.2, "caption": "Jun's Speech", "ref": ["This opening anticipates the question \"what is the difference between RiskMind and RBC Assist Pro?\" and answers it at the end of the Landscape slide."]}, {"n": 2, "t": 5.4, "caption": "Jun's Speech", "ref": []}, {"n": 3, "t": 7.6, "caption": "Jun's Speech", "ref": []}, {"n": 4, "t": 9.7, "caption": "Jun's Speech", "ref": ["Our products sit inside Risk Management, in the vertical layer."]}, {"n": 5, "t": 12.5, "caption": "Jun's Speech", "ref": ["The Tesla and F1 pictures come from the original GRM AI slide (background removed).", "Driver (Risk SME) and Pit Crew (AI Center of Excellence) set out who does what."]}]}, {"title": "AI Tools Landscape", "subtitle": "Where RiskMind Fits", "beats": [{"n": 6, "t": 14.8, "caption": "Jun's Speech", "ref": ["Why this slide: the audience already has several AI tools within reach. This gives them a map of what each tool is, what it is good for, and where RiskMind sits, before we introduce RiskMind.", "Two kinds of tools, split by one question: can the tool run multiple steps? Chat is on the left and Agentic Systems is on the right. A vertical dashed line separates them.", "Picture the axis as a slider: how freely the LLM can decide the next step. Agentic Systems covers both workflows and agents; they sit at different points on the same slider.", "\"Agentic Systems\" is Anthropic's umbrella term. Anthropic splits Agentic Systems into two kinds (source):", "Workflows: \"systems where LLMs and tools are orchestrated through predefined code paths\"", "Agents: \"systems where LLMs dynamically direct their own processes and tool usage\""]}, {"n": 7, "t": 17.9, "caption": "Jun's Speech", "ref": ["RBC Assist Pro is an in-house, horizontal platform with no domain expertise.", "One prompt goes in and one LLM response comes out. It can make tool calls, so it can connect to MCP, but there is no workflow and no loop underneath, so it cannot run a multi-step analysis.", "In Anthropic's words this is an augmented LLM: \"The basic building block of agentic systems is an LLM enhanced with augmentations such as retrieval, tools, and memory.\" (source)", "It lets users customize an \"end-user agent\": a fixed prompt template plus a fixed set of MCP connections. It is still one response, so it is an augmented LLM and not an agent. (We call it a Prompt Based Agent internally. This is our own term, not an official one.)", "It fits questions and tasks that one response can answer.", "Per Anthropic it is a building block of agentic systems, not an agentic system itself, so it sits at the left end of the slider, with zero steps for the LLM to decide. It is also the smallest unit of everything on the right side: each LLM call in a workflow, and each turn of an agent, is built on it."]}, {"n": 8, "t": 23.5, "caption": "Jun's Speech", "ref": ["The vertical dashed line is the boundary: Chat (a single augmented LLM) on the left, Agentic Systems on the right.", "Prompt Chaining is the left starting point of Agentic Systems, the pattern with the least freedom for the LLM.", "It is shown as a pattern (dashed), not as a product we have.", "Anthropic's definition of prompt chaining: \"Prompt chaining decomposes a task into a sequence of steps, where each LLM call processes the output of the previous one.\" (source)"]}, {"n": 9, "t": 29.1, "caption": "Jun's Speech", "ref": ["Autonomous Agent is the right end of the bar: the agent decides every step with no human in the loop.", "It is shown as a pattern, not as a product we have.", "Anthropic's definition of agents: \"systems where LLMs dynamically direct their own processes and tool usage\" (source)."]}, {"n": 10, "t": 35.9, "caption": "Jun's Speech", "ref": ["Dashed means a pattern, not a product.", "Other tools and patterns exist on the same slider (the dots in the static version of this picture stand for them); we do not go through them."]}, {"n": 11, "t": 37.9, "caption": "Jun's Speech", "ref": ["DocuMind is in-house, and from the same family as RiskMind by name, but built differently.", "It is a workflow: LLMs and tools orchestrated through predefined code paths. Every step is a node, every transition is an edge, and the process knowledge lives in code.", "The LLM is a component inside a node. There is no loop, and the next step is not decided by the LLM, so it is not an \"agent\".", "It has domain expertise."]}, {"n": 12, "t": 42.3, "caption": "Jun's Speech", "ref": ["What makes it an agent is a loop: the model reasons, acts, reads the result, and reasons again, until the task is done. The ReAct paper describes it:", "ReAct: \"we explore the use of LLMs to generate both reasoning traces and task-specific actions in an interleaved manner\" (source)", "Reasoning: \"reasoning traces help the model induce, track, and update action plans as well as handle exceptions\" (source)", "Acting: \"actions allow it to interface with external sources, such as knowledge bases or environments, to gather additional information\" (source)", "RiskMind is in-house and sits further right than DocuMind. It has domain expertise, so it is a vertical product.", "The process is written in natural language, as Skills. The Skills guide the steps, and the agent decides the next step based on that guidance. It uses scripts for the steps that must be exact.", "The number of steps is not fixed. It depends on how the Skill is written.", "Our analysis is step by step, so it could be written either way, as a workflow or as an agent. The question is which one fits what we need: expansion. Session 2 explains why."]}, {"n": 13, "t": 50.0, "caption": "Jun's Speech", "ref": ["Workflow and Agent are both agentic systems; they sit at different points on the same slider. The line between Workflow and Agent sits between DocuMind and RiskMind.", "It is not a ranking of tools. The framework and the definitions come from Anthropic's \"Building effective agents\"."]}, {"n": 14, "t": 53.1, "caption": "Jun's Speech", "ref": ["Colors: blue means vertical, a tool with domain expertise. Yellow (RBC yellow) means horizontal, a tool without domain expertise. Dashed means a pattern, not a product.", "RBC Assist Pro: general-purpose, end-user driven, broad but shallow (summarize commentaries, aggregate top of the house). RiskMind: purpose-built for risk insight workflows, SME expertise embedded, deep in the domain."]}, {"n": 15, "t": 55.1, "caption": "Jun's Speech", "ref": ["Answers the question raised in the opening (beats 1–5)."]}]}, {"title": "RiskMind Positioning", "subtitle": "", "beats": [{"n": 16, "t": 56.2, "caption": "Thanks, Jun.\n\nRiskMind can do a lot of things. But if I had to summarize it in one line, RiskMind is an agent that generates risk insight from data.\n\nWe kicked off the project in April this year, and we finished the proof of concept in September. Let me walk through what we've built over those six months.", "ref": ["The core message: RiskMind is an agent that generates risk insight from data, working from Skills. All numbers are calculated by code; the LLM only writes the words.", "RiskMind helps Risk Managers with analysis and risk insight. It does not replace the Official Risk Report, and Risk Managers still review what RiskMind produces.", "The five pill labels that roll past are the five things RiskMind does: runs Portfolio Analysis, explains period-over-period changes, drills down into drivers, answers ad-hoc questions, flags data issues. They land on the one-line positioning.", "Timeline: Proof of Concept from April 2026 to September 2026; Production until April 2027; Expansion follows (dashed, not scheduled)."]}]}, {"title": "Today vs. With RiskMind", "subtitle": "", "beats": [{"n": 17, "t": 66.4, "caption": "To show how RiskMind works, let's start with how risk analysis is done in Local Market Risk today.\n\nRisk managers produce the risk report, drill down into the drivers, and handle ad-hoc questions. The risk report is the starting point. It shows the big picture of the portfolio. Everything else builds on top of it. In the end, what we deliver is risk insight, either as a dashboard or as a comment.\n\nProducing the risk report is already fairly automated, with Python scripts running on a schedule. But the report doesn't contain any comments. Drill-downs and ad-hoc requests still rely mostly on the risk manager doing the analysis manually.\n\nIf the desk has good documentation, the analysis steps are written down in a standard operating procedure, or SOP. It covers where to get the data, which scripts to run, and how to read the results. So today, the human executes, guided by the SOP. But an SOP isn't always there, and it isn't always up to date. So when someone moves on, the next person either follows the SOP, or has to rely on a handover from the person before them.", "ref": ["Top-down analysis: the Risk Manager starts from the portfolio level (today's level and the change vs. yesterday), sees a driver, and digs into one aspect or subset to see how it drove the change.", "Ad-hoc questions may not relate to the portfolio result at all.", "The SOP is the Operational Manual the Risk Manager follows. Today the human executes, guided by the SOP.", "Both ends of the automation axis are theoretical: nobody works fully manually today, and fully automatic (no human in the loop) is not our goal."]}, {"n": 18, "t": 71.5, "caption": "The bar below shows the effort risk managers put into an analysis. Any analysis can be split into three stages. Design, execution and judgement.\n\nDesign is working out how to do the analysis, like what data you need, which analysis actually answers the question, and how to dig into the drivers. Execution is running that plan and getting the results. And judgement is validating the results and making decisions.\n\nFor most analyses, design is a one-time effort, because the questions we face keep coming back. Execution is different. It happens almost every day. So in today's process, most of the risk manager's effort goes into execution.", "ref": ["The bar shows where a year of effort goes. Spotting a problem and judging whether it is worth doing is settled before RiskMind, so the bar covers only three steps: Design (designing the method), Execution, and Judgement (judging the result).", "Today: Execution is by far the largest part.", "Judgement is the Risk Manager's call on what the result means. It is not part of execution, and it stays with the Risk Manager."]}, {"n": 19, "t": 72.6, "caption": "With RiskMind, we push automation further with AI. The analysis itself is much the same as today, but the way we do it is different.\n\nRiskMind doesn't produce the official risk report. Instead, it delivers a portfolio analysis to the risk manager as a scheduled service, and that becomes the starting point. From there, the risk manager can ask follow-up questions in the chat to drill down, or ask for an ad-hoc analysis.\n\nThe agent follows Skills, which are the steps written in natural language. The result is a dashboard with comments and charts, or a direct answer in the chat. Then the risk manager verifies it.\n\nSo the process shifts from \"human executes, guided by the SOP\" to \"agent executes, guided by Skills, human verifies\". It's not just about automation. The risk manager's role changes too. With RiskMind, they design the process once, and verify the execution results every time.\n\nNow look at what happens to the effort. Design takes a bit more. People can click through different software to get what they need, but an agent can only work through code. So some manual steps need to be automated first, and set up in a way the agent can use. But that's a one-time effort. Execution, the part we repeat every day, shrinks a lot. Judgement stays the same. It's still the risk manager's job to validate the results and make decisions. All the space that frees up on the left is the saved effort.", "ref": ["Portfolio Analysis is the Risk Manager's daily starting point. It is a scheduled service that runs at a fixed time every day, so the Risk Manager does not trigger anything.", "Drill Down extends Portfolio Analysis: together they form a top-down analysis. The Risk Manager sees a driver in the portfolio result and wants to dig into one aspect or subset. They type the request in chat in natural language and specify the driver or subset.", "Ad-hoc: the Risk Manager types the question in chat in natural language. It may not relate to the portfolio result. It is in skill scope: the process must already be defined in a skill, and the agent does not write its own code or figure out the process.", "Details of how each one runs are on the \"How a Pipeline Runs\" slide.", "The Risk Manager always verifies RiskMind's output. RiskMind does not replace the Official Risk Report or the Risk Manager's judgment.", "The role changes: from doing the analysis every time, to designing it once and verifying it every time.", "Effort: Design takes more (more automation, and a Skill an agent follows cannot leave things implicit the way a manual for people can), but it is a one-time effort. Execution happens every run and shrinks. Judgement stays the same: it is still the Risk Manager's job. Saved Effort is everything on the left, about half the bar."]}]}, {"title": "What RiskMind Is: Agent + Plugin", "subtitle": "RiskMind Introduction", "beats": [{"n": 20, "t": 76.7, "caption": "So how does RiskMind actually do this? Let's take a look inside. At the center is the agent. It's the engine, built on the Claude Agent SDK, which is Anthropic's toolkit for building agents. And our data sits in our internal databases. But how do we connect that data to RiskMind?", "ref": ["RiskMind = Agent + Plugin. The Agent is the engine, and the Plugin gives it business knowledge (Skills) and data access (MCP).", "The Agent is built on the Claude Agent SDK."]}, {"n": 21, "t": 78.9, "caption": "That's where MCP comes in. Through MCP, the agent can pull data from our databases. Then there are Skills. They carry the business context, meaning how a risk manager actually does the analysis. Together, MCP and Skills make up a plugin, and this is the part risk managers shape. Plug it into the agent, and the agent can work the way a risk manager does. So RiskMind is an agent plus a group of plugins.", "ref": ["To mimic how a Risk Manager analyzes, the agent needs a lot of business context. It arrives as Skills: every product is one plugin, and every metric inside it is one skill (1 Product = 1 Plugin, 1 Metric = 1 Skill; said in the talk track only, not on screen). This plugin side is what Risk Managers work on.", "The risk reports need internal data, and every internal database is connected through MCP.", "Skills and MCP get their own sessions later (Session 3); this slide is the whole picture."]}, {"n": 22, "t": 82.3, "caption": "Using it is simple. A risk manager just sends a question or a request to RiskMind in natural language.", "ref": ["The input can be a slash command (scheduled) or a question in natural language; the three modes are on the next slide."]}, {"n": 23, "t": 82.9, "caption": "What comes back is either a dashboard, with risk insight and charts, or, for a quick ad-hoc question, an answer right in the chat.", "ref": ["RiskMind gives Local Risk Managers either a Dashboard, which combines insight with data visualization, or a answer in chat in chat for a simple question.", "The Dashboard does not replace the Official Risk Report.", "The three analysis modes behind these outputs (Portfolio Analysis, Drill Down, Ad-hoc) are on the next slide."]}]}, {"title": "How a Pipeline Runs", "subtitle": "RiskMind Pipelines", "beats": [{"n": 24, "t": 84.5, "caption": "Now let's zoom in and see how the agent actually follows a Skill, step by step.\n\nA request comes in, either a scheduled portfolio analysis, or a question in the chat. The agent picks it up and opens the Skill. A Skill is a folder with two parts. There's a markdown file called SKILL, with the instructions written in plain language, much like the SOP we saw earlier. And there are scripts, which are the code it can run.\n\nThe agent reads the SKILL file one instruction at a time, and does what it says. Most analyses follow a pretty standard pattern. First, it gets the data through MCP. Then it runs a script to do the calculations. Based on the results, the LLM writes the comments. Another script creates the charts, and everything is put together into a dashboard. Or, for a simple ad-hoc question, the LLM just writes the answer in the chat.", "ref": ["Three pipelines, all predefined in skills. Portfolio Analysis → Drill Down is a top-down analysis.", "Pipeline summary (table below the scene).", "Portfolio Analysis: in the skill it is a slash command with parameters, so a scheduled run does not need a generated prompt. The output is a Dashboard, a self-contained HTML Artifact.", "Drill Down runs the same pipeline as Portfolio Analysis; only the scripts, the data, and the comments to write are different. The output is a Dashboard.", "Ad-hoc comes in two forms. Form 1, with a Dashboard: it runs the report flow below. Form 2, with a answer in chat: it runs the direct-answer flow below; the agent runs one script and the LLM returns the answer in chat.", "Parameters are defined in the skill. If the user leaves out a required one, the agent asks.", "The report flow, step by step:", "1. Fetch data: the agent fetches data through MCP. The data is saved in a folder, and MCP returns only the file location.", "2. Run scripts: scripts take the file location as input and produce a markdown file and a json file. The agent generates nothing in this step; it only executes the scripts.", "3. Write comments: the agent reads the markdown file and the skill, then writes a comment for each section. The output is a json, with the section as the key and the comment as the value.", "4. Visualize: a predefined script turns the data from step 2 into ECharts charts and tables. The agent does not change it. The output is a json, with the section as the key and the figure or table as the value.", "5. Render report: the agent calls Skill: render_html, which puts each section's comment and figure together into the HTML report, one comment with one figure per section. The skill merges the comment json and the figure json by section key into a final json, renders it with a template into the HTML report, and returns the report's location to the agent.", "Why file locations are passed between steps: the agent does not need to read every file, so the data never enters the agent's context. Only what the agent needs in order to write the comments or generate the answer enters its context, and it is fed as markdown, the format the agent knows best. Everything else is digested by scripts into json. The agent does not read the json; it only passes the correct location into the next command. This keeps the agent's context as small as possible, which is the main reason the pipeline is built around file locations.", "The direct-answer flow: the agent fetches the data through MCP, runs one script, and the LLM writes the answer directly in chat. There are no comments json, figures json, or HTML report. The LLM generates only the answer.", "The next session replays this same run turn by turn to show how the agent works through it.", "In the video, steps 4 and 5 of the report flow (Visualize, Render) are shown as one step, Build Dashboard (two SKILL.md instructions, one step). The scripts shown are analyze.py (Analyze) and generate_visualization.py (charts); the dashboard is built with Skill: render_html.", "The agent decides the next step each turn, but the order of the steps is defined by the skill."]}, {"n": 25, "t": 94.0, "caption": "Now Let's see what handles each step. MCP gets the data. Scripts do the calculations and build the dashboard. LLM only does the writing, the comments or the answer. It reads the numbers, but never calculates them, because LLM can get numbers wrong. So it's numbers from scripts, words from the LLM. Risk manager still needs to verify what it writes.", "ref": ["Why it is built this way: to keep the numbers accurate, the only thing generated by the LLM is the comment (or the answer in chat). Everything else is produced by scripts. The agent's job is to trigger them and keep the order right.", "The hallucination answer is the process design (code produces the numbers; the LLM writes the words), not a comparison with RBC Assist Pro."]}]}, {"title": "Demo", "subtitle": "", "beats": [{"n": 26, "t": 96.3, "caption": "Okay, that's enough from me. Let's meet RiskMind.", "ref": ["The demo is a separate video, so there is no other slide content here.", "To do: replace the placeholder once the demo is recorded; check whether the real report in the recording needs masking."]}]}, {"title": "Why RiskMind", "subtitle": "", "beats": [{"n": 27, "t": 97.7, "caption": "So that's what RiskMind can do. To summarize, RiskMind brings three things.\n\nIt improves efficiency. The repetitive analysis is automated, so it no longer takes up a risk manager's day. That frees risk managers to focus on the work that really adds value.", "ref": ["Their time moves from doing the analysis to reviewing it and acting on it."]}, {"n": 28, "t": 104.9, "caption": "It also ensures consistency. Today, everyone writes insights in their own style, and they can vary a lot from person to person. With RiskMind, each analysis has a standard, written in its Skill. So no matter who runs it, the insight follows that standard.", "ref": []}, {"n": 29, "t": 106.8, "caption": "And it digitizes our domain expertise. Today, a lot of how we do our analysis lives in people's heads, and we pass it on through conversations. Even when it's written down, it's hard to keep up to date. A Skill, by nature, is that expertise documented. So once it's in a Skill, it stays with the team when people move on.", "ref": ["Knowledge digitization answers key-person risk. Say \"knowledge stays in the team when people move on\" and do not mention people leaving directly."]}]}, {"title": "From Proof of Concept to Production", "subtitle": "", "beats": [{"n": 30, "t": 109.1, "caption": "So that's what we've built over the past six months. Our plan is to move RiskMind into production next April, and release it to all users. Let me walk through our roadmap for this production phase.", "ref": ["Where we are now: the proof of concept is complete.", "The summary line reads \"Brings Efficiency, Consistency, and Knowledge Digitization\". \"Digitization\" is new because Knowledge itself is not something RiskMind brings."]}]}, {"title": "Expansion", "subtitle": "", "beats": [{"n": 31, "t": 112.5, "caption": "Here's where we are after the proof of concept. RiskMind has three parts. The plugins, which carry the domain expertise. The agent, which runs the analysis. And the data connections.\n\nWe started with one use case, stress P&L explain, for three portfolios, FX Options, Muni and IG Canada. Each portfolio is its own plugin, and each plugin has one Skill for stress P&L explain. On the agent side, we have the runtime in place. And since the stress data for these three portfolios comes mainly from ATOM, we built an MCP connection to ATOM.", "ref": ["How to read the picture: products run up the vertical axis and metrics run along the horizontal axis. Each product is a plugin, drawn as one row. Each cell is a skill, which is one metric for that product.", "The use case so far is \"Stress P&L explain\": one metric, for three products (FX Option, Muni, IG Canada). Each product is a plugin with one skill, Stress P&L.", "ATOM is the data connection that is live today."]}, {"n": 32, "t": 114.2, "caption": "During the proof of concept, the Market Risk AI team worked with the risk managers of these three portfolios to build the plugins. In the production phase, we'll gradually hand that over to the Local Market Risk teams. We'll start with the AI champions nominated by each team, and then bring in more risk managers over time.", "ref": ["How we work in Phase 1: there is no Skill Tooling yet, so the Market Risk AI Team works with AI Champions from Local Market Risk. The AI Champions draft the skills, including the scripts, without Skill Tooling, and the Market Risk AI Team provides the support they need.", "Local Risk Management works with the AI Team to decide who the AI Champions are and in what order products are onboarded to RiskMind.", "For Senior Managers this slide answers \"how do my people work with the AI team\": Local Market Risk, through its AI Champions, drafts the skills, and the AI team builds the framework and the Skill Tooling. Skill Tooling is meant to make drafting skills easier later.", "The slide says Local Market Risk writes the Skills; in Phase 1 this starts with the AI Champions."]}, {"n": 33, "t": 114.6, "caption": "Meanwhile, Market Risk AI and AiXel will keep building and maintaining the platform underneath, which is the agent and the data connections.", "ref": ["Market Risk AI and AiXel build the platform: the Agent and the data connection. The Market Risk AI Team builds the Agent and the plugin framework.", "Data sources and MCP are owned by AiXel (previously called the Agent Serving Team, Enterprise AiXel).", "Data sources do not map one-to-one to a product or an analysis, so the picture only says that data sources and MCP are built by AiXel."]}, {"n": 34, "t": 115.0, "caption": "And both teams will support the risk managers as they turn their domain expertise into Skills.", "ref": ["Support: both teams support Local Market Risk in writing the Skills. In Phase 1 the Market Risk AI Team works with the AI Champions and provides the support they need.", "Local Risk Management works with the AI Team to decide who the AI Champions are and in what order products are onboarded to RiskMind.", "For Senior Managers this slide answers \"how do my people work with the AI team\": Local Market Risk, through its AI Champions, drafts the skills, and the AI team builds the framework and the Skill Tooling. Skill Tooling is meant to make drafting skills easier later."]}, {"n": 35, "t": 116.0, "caption": "So how does RiskMind grow from here? On the business side, there are two directions. One is to bring stress P&L explain to more products. Each one gets its own plugin and its own Stress P&L Skill.", "ref": ["Product expansion: Stress P&L grows from 3 to 13 products, which means ten more plugins, each with a Stress P&L skill.", "Phase 1 runs on the collaboration model described at beat 27, because Skill Tooling does not exist yet."]}, {"n": 36, "t": 117.2, "caption": "The other direction is more analyses. Each new analysis, like VaR or what-if analysis, becomes a new Skill in every plugin. Working with the AI champions, we plan to grow from three Skills today to more than ten in this phase.", "ref": ["Analysis expansion: each new analysis (metric) is a new skill in every product's plugin, which adds a new column. VaR and What-if Analysis are examples of analyses we may add.", "The Market Risk AI Team builds the plugin framework. AI Champions from Local Market Risk draft the skills, including the scripts."]}, {"n": 37, "t": 118.6, "caption": "While the AI champions keep adding plugins and Skills, Market Risk AI will keep working with AiXel to add more features to the platform itself. In this phase, we're planning three of them, all to help risk managers build better Skills.\n\nAutoEval checks whether a Skill meets our standards. Going forward, every new Skill will need to pass AutoEval before it goes into RiskMind in production.\n\nAutoSkill is an agent that helps risk managers draft Skills. Ideally, you'll be able to write a Skill just by chatting with it.\n\nAnd AutoEvolution keeps improving the Skills already on RiskMind. As risk managers use a Skill, RiskMind looks back at those conversations and works out how the Skill could be better. That feedback is then used to improve the Skill.", "ref": ["Skill Tooling, in order. It applies to every skill in the matrix.", "AutoEval: automatically evaluates skills, reducing our review burden.", "AutoSkill: a separate agent. The Risk Manager talks to it, and it packs the business knowledge into a skill, provides a sandbox to run it, uses AutoEval to evaluate it, and returns an evaluation report for further improvement.", "AutoEvolution: extracts feedback and critique on skills from RiskMind production runtime memory and uses it as context for the agent to enhance skills; long-term skill lifecycle management."]}, {"n": 38, "t": 119.4, "caption": "On the data side, AiXel will keep building connections to more of our Market Risk data sources. We've already connected GRIP and RiskLedger, and more will follow.", "ref": ["Data Connection (MCP): ATOM is connected today; GRIP and RiskLedger are the next data sources.", "Owned by the Agent Serving Team, and not tied to one product or one metric."]}]}, {"title": "Key Takeaways", "subtitle": "Three Things to Take Away", "beats": [{"n": 39, "t": 120.7, "caption": "We're almost at the end. Before we wrap up, let me leave you with three things to take away.", "ref": ["The closing mirrors the opening GRM AI Vision page: first one centered line, then it folds into two lines on the left with three takeaways on the right. Each takeaway first plays a miniature of an earlier scene, then its text fades in."]}, {"n": 40, "t": 124.7, "caption": "First, RiskMind complements RBC Assist Pro. RBC Assist Pro is a horizontal application, for everyday productivity across RBC. RiskMind is a vertical application, built for deep risk insight.", "ref": ["Repeats the point from the end of the Landscape slide (beat 15)."]}, {"n": 41, "t": 127.3, "caption": "Second, your role as a risk manager shifts. Instead of executing every step yourself, you design the method once, RiskMind executes it, and you validate the results and make decisions.", "ref": ["Repeats the point from the Today vs. With RiskMind slide (beat 19): design once, judge every time."]}, {"n": 42, "t": 129.1, "caption": "And third, Skills digitize your domain expertise, so it no longer lives only in people's heads.", "ref": ["Repeats the point from the Why RiskMind slide (beat 29)."]}, {"n": 43, "t": 131.2, "caption": "That's it for today. Next time, on November 23, we'll go deeper into the agent. We'll look at the different agentic patterns, what an agent harness is, what we built specifically for RiskMind, and how plugins work with the agent.", "ref": ["The same page as the course page at the start (beat Course), now with Session 2 as Next. Only the next session is highlighted; Session 3 stays gray.", "Session 2 walks through the four layers of an agent: Augmented LLM · Agent Harness · RiskMind Customization · Business Plugin. Spoken only, not on screen."]}, {"n": 44, "t": 134.6, "caption": "Thanks, everyone. We're now open to questions.", "ref": ["Market Risk and AiXel are the two teams behind RiskMind (see the team split on the Expansion slide)."]}]}]}</script>
+<script>
+const DATA=JSON.parse(document.getElementById('beats').textContent);
+const LIST=DATA.slides.flatMap((s,si)=>s.beats.map(b=>({...b,slide:s.title,si})));
+const SHOW='RiskMind Session 1.html', WIN='rm-s1-show';
+const $=id=>document.getElementById(id);
+const bc='BroadcastChannel' in window?new BroadcastChannel('rm-s1'):null;
+let showWin=null;
+
+// ---- the script column ----
+const els=[];
+{const box=$('script');let lastSlide=-1;
+  LIST.forEach((b,i)=>{
+    if(b.si!==lastSlide){lastSlide=b.si;const h=document.createElement('div');h.className='slide-h';
+      const s=DATA.slides[b.si];h.textContent=s.title+(s.subtitle?' · '+s.subtitle:'');box.appendChild(h);}
+    const d=document.createElement('div');d.className='beat';
+    const n=document.createElement('div');n.className='num mono';n.textContent=b.n;
+    const body=document.createElement('div');
+    const st=document.createElement('p');st.className='status';
+    const cap=document.createElement('div');cap.style.whiteSpace='pre-line';cap.textContent=b.caption||'—';
+    const ref=document.createElement('ul');ref.className='ref';
+    (b.ref||[]).forEach(r=>{const li=document.createElement('li');li.textContent=r;ref.appendChild(li);});
+    body.append(st,cap);if((b.ref||[]).length)body.append(ref);
+    d.append(n,body);box.appendChild(d);
+    d.addEventListener('click',()=>{const g=i-OFF();cmd('seek',g<0?{T:0,play:false}:{T:ALL()[g]??0,play:true});});
+    els.push({d,st});
+  });}
+
+// ---- state: mirrors the presentation; without one, a local stand-in that jumps beat to beat ----
+// A cover beat (a first beat labelled with a word, e.g. "Cover") is what shows at 0 s before anything plays;
+// every other beat is one stretch of the presentation: from one stop to the next, then the talk over its end frame.
+const COVER=isNaN(+LIST[0]?.n)?1:0;
+const FAKE=Array.from({length:Math.max(0,LIST.length-1-COVER)},(_,k)=>k+1);   // stand-in stops when no presentation is open
+let S={T:0,playing:false,stops:FAKE,duration:FAKE.length+1}, seenAt=-1e9, cur=-1;
+const ALL=()=>[0,...S.stops];
+const OFF=()=>{const n=ALL().length;return LIST.length===n+1?1:LIST.length===n?0:COVER;};   // beats ahead of the first stretch
+const connected=()=>performance.now()-seenAt<1600;
+
+function where(){const w=seg(),o=OFF();   // which beat the screen shows, and in what state
+  if(o&&w.state==='ready')return{i:0,g:-1,state:'done'};                 // the cover is on screen
+  return{i:w.i+o,g:w.i,state:w.state};}
+function seg(){             // which stretch of the presentation, and in what state
+  const A=ALL(), T=S.T, eps=1e-3;
+  const j=A.findIndex(s=>Math.abs(s-T)<eps);
+  if(S.playing){let i=0;for(let k=0;k<A.length;k++)if(A[k]<=T+eps)i=k;return{i,state:'playing'};}
+  if(T>=S.duration-eps)return{i:A.length-1,state:'done'};
+  if(j===0)return{i:0,state:'ready'};
+  if(j>0)return{i:j-1,state:'done'};               // stopped on a beat's end: that beat is fully on screen
+  let i=0;for(let k=0;k<A.length;k++)if(A[k]<T)i=k;return{i,state:'paused'};
+}
+const STATUS={playing:'▶ Playing',done:'■ Done · press → for the next beat',ready:'Press → to play this beat',paused:'❚❚ Paused · press P to resume'};
+
+function cmd(c,extra={}){
+  const m={rm:'s1',type:'cmd',cmd:c,id:Math.random().toString(36).slice(2)+Date.now().toString(36),...extra};
+  if(connected()){try{bc&&bc.postMessage(m);}catch(_){}try{showWin&&!showWin.closed&&showWin.postMessage(m,'*');}catch(_){}}
+  else local(m);
+}
+function local(m){const A=ALL();       // no presentation: just move between beats
+  if(m.cmd==='advance')S.T=S.stops.find(s=>s>S.T+1e-3)??S.duration;
+  else if(m.cmd==='back')S.T=[...A].reverse().find(s=>s<S.T-1e-3)??0;
+  else if(m.cmd==='home')S.T=0;
+  else if(m.cmd==='seek'){const k=A.findIndex(s=>Math.abs(s-m.T)<1e-3);S.T=m.play&&k>=0?(A[k+1]??S.duration):m.T;}
+  S.playing=false;update();}
+
+function onMsg(e){const d=e.data;if(!d||d.rm!=='s1'||d.type!=='state')return;
+  S={T:d.T,playing:d.playing,stops:d.stops,duration:d.duration};seenAt=performance.now();update();}
+if(bc)bc.addEventListener('message',onMsg);
+addEventListener('message',onMsg);
+try{bc&&bc.postMessage({rm:'s1',type:'hello'});}catch(_){}
+
+// ---- drawing ----
+let startAt=null;
+const mirror=$('mirror');
+function update(){
+  const {i,state}=where();
+  if(i!==cur){
+    els.forEach((e,k)=>{e.d.classList.toggle('cur',k===i);e.d.classList.toggle('next',k===i+1);});
+    cur=i;const el=els[i]?.d, box=$('script');
+    if(el)box.scrollTo({top:Math.max(0,el.offsetTop-box.clientHeight*.16),behavior:'smooth'});
+    const nb=LIST[i+1];
+    $('nextbox').innerHTML='';
+    if(nb){const b=document.createElement('b');b.textContent=nb.n+' · '+nb.slide;$('nextbox').append(b,document.createElement('br'),
+      document.createTextNode((nb.caption||'').slice(0,160)+((nb.caption||'').length>160?'…':'')));}
+    else $('nextbox').textContent='Last beat';
+  }
+  const e=els[i];if(e){e.st.textContent=STATUS[state];e.st.classList.toggle('done',state==='done');}
+  const b=LIST[i];
+  $('where').innerHTML='';$('where').append(document.createTextNode(`${b?b.n:'—'} / ${LIST.length}`));
+  if(b){const sm=document.createElement('small');sm.textContent=b.slide;$('where').append(sm);}
+  // the time bar
+  const A=ALL(),D=S.duration||1;
+  $('fill').style.width=(S.T/D*100)+'%';
+  const g=i-OFF();$('seg').style.left=((A[g]??0)/D*100)+'%';$('seg').style.width=(g<0?0:((A[g+1]??D)-(A[g]??0))/D*100)+'%';
+  $('tNow').textContent=connected()?S.T.toFixed(1)+'s':'—';$('tEnd').textContent=connected()?D.toFixed(1)+'s':'—';
+  // the preview
+  try{mirror.contentWindow.postMessage({rm:'s1',type:'state',T:S.T},'*');}catch(_){}
+  if(S.playing&&startAt==null)startAt=Date.now();
+  $('bPause').textContent=S.playing?'❚❚ Pause':'▶ Resume';
+}
+function drawTicks(){const t=$('track');t.querySelectorAll('.tick').forEach(x=>x.remove());
+  S.stops.forEach(s=>{const k=document.createElement('div');k.className='tick';k.style.left=(s/S.duration*100)+'%';t.appendChild(k);});}
+let tickKey='';
+setInterval(()=>{                                   // connection light, warnings, clock
+  const on=connected();$('conn').classList.toggle('on',on);
+  $('connTxt').textContent=on?'Presentation connected':'Presentation not connected (script only)';
+  $('bOpen').style.display=on?'none':'';
+  const key=S.stops.join(',');if(key!==tickKey){tickKey=key;drawTicks();
+    const w=$('warn'), n=S.stops.length+1;
+    if(on&&n!==LIST.length&&n+1!==LIST.length){w.style.display='block';w.textContent=`The script has ${LIST.length} beats but the presentation has ${n}, so they may not line up. Rebuild the prompter after the outline or the presentation changes.`;}
+    else w.style.display='none';}
+  const s=startAt==null?0:Math.floor((Date.now()-startAt)/1000);
+  $('clock').textContent=`⏱ ${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+},250);
+new ResizeObserver(()=>{mirror.style.transform=`scale(${$('pv').clientWidth/1920})`;}).observe($('pv'));
+mirror.addEventListener('load',()=>update());
+
+// ---- controls ----
+let fs=34;try{fs=+localStorage.getItem('rm-s1-fs')||34;if(localStorage.getItem('rm-s1-ref')==='1')document.body.classList.add('showref');}catch(_){}
+const setFs=v=>{fs=Math.max(20,Math.min(64,v));document.documentElement.style.setProperty('--fs',fs+'px');try{localStorage.setItem('rm-s1-fs',fs);}catch(_){}};
+setFs(fs);
+const toggleRef=()=>{const on=document.body.classList.toggle('showref');try{localStorage.setItem('rm-s1-ref',on?'1':'0');}catch(_){}};
+function openShow(){
+  showWin=window.open(SHOW,WIN,'popup=yes,width=1280,height=760');
+  // a presentation opened from here also talks back over postMessage (window.opener)
+}
+const ACT={bOpen:openShow,bBack:()=>cmd('back'),bNext:()=>cmd('advance'),bPause:()=>cmd('toggle'),
+  bHome:()=>{cmd('home');startAt=null;},bRef:toggleRef,bSmall:()=>setFs(fs-2),bBig:()=>setFs(fs+2)};
+for(const k in ACT)$(k).addEventListener('click',e=>{ACT[k]();e.currentTarget.blur();});   // blur: Space stays "next"
+addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const c=e.code;
+  if(['ArrowRight','ArrowDown','Space','PageDown','Enter'].includes(c)){cmd('advance');e.preventDefault();}
+  else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(c)){cmd('back');e.preventDefault();}
+  else if(c==='Home'){cmd('home');startAt=null;e.preventDefault();}
+  else if(c==='KeyP'){cmd('toggle');}
+  else if(c==='KeyR'){toggleRef();}
+  else if(c==='Equal'||c==='NumpadAdd'){setFs(fs+2);}
+  else if(c==='Minus'||c==='NumpadSubtract'){setFs(fs-2);}
+});
+update();
+</script>
+</body>
+</html>

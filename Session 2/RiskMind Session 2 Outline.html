@@ -1,0 +1,345 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>RiskMind Session 2 Outline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a review outline. Sticky session tabs on top, one column of slide cards, each card = title, format tag, bullets, optional diagram block. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --fg: #16212b;
+  --muted: #5b6a78;
+  --line: #d9e0e6;
+  --accent: #0f5f7a;
+  --accent-soft: #dcecf2;
+  --anim: #8a4b08;
+  --anim-soft: #fbe9d3;
+  --info: #0f5f7a;
+  --info-soft: #dcecf2;
+  --skip: #5b6a78;
+  --skip-soft: #e6eaee;
+  --todo: #7a2e5a;
+  --todo-soft: #f4dfeb;
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f161c;
+    --surface: #17212a;
+    --fg: #e6ecf1;
+    --muted: #93a3b1;
+    --line: #2a3844;
+    --accent: #6fc3dc;
+    --accent-soft: #163645;
+    --anim: #f0b36c;
+    --anim-soft: #3a2a14;
+    --info: #6fc3dc;
+    --info-soft: #163645;
+    --skip: #93a3b1;
+    --skip-soft: #222e38;
+    --todo: #e7a3cb;
+    --todo-soft: #3a1f30;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f161c;
+  --surface: #17212a;
+  --fg: #e6ecf1;
+  --muted: #93a3b1;
+  --line: #2a3844;
+  --accent: #6fc3dc;
+  --accent-soft: #163645;
+  --anim: #f0b36c;
+  --anim-soft: #3a2a14;
+  --info: #6fc3dc;
+  --info-soft: #163645;
+  --skip: #93a3b1;
+  --skip-soft: #222e38;
+  --todo: #e7a3cb;
+  --todo-soft: #3a1f30;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-inline: 16px;
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1440px; margin-inline: auto; }
+.diagram svg { max-width: 1100px !important; margin-inline: auto; }
+header.top { padding-block: 32px 20px; }
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.1;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.lede { color: var(--muted); margin: 0; max-width: 80ch; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.stat {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 4px 10px;
+  color: var(--muted);
+}
+.stat b { color: var(--fg); font-weight: 500; }
+
+nav.tabs {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-block: 8px;
+  margin-inline: -16px;
+  padding-inline: 16px;
+}
+nav.tabs a {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+nav.tabs a:hover, nav.tabs a:focus-visible { background: var(--accent-soft); color: var(--accent); outline: none; }
+nav.tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+section.session { padding-top: 36px; scroll-margin-top: 56px; }
+.session-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.session-head h2 { font-family: var(--font-display); font-size: 26px; margin: 0; }
+.session-head .count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.session-sub { color: var(--muted); margin: 0 0 16px; }
+
+.slide {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+.slide-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.slide-head h3 { font-family: var(--font-display); font-size: 20px; line-height: 1.2; margin: 0; text-wrap: balance; }
+.slide-head .subtitle { display: block; font-family: var(--font-body); font-weight: 400; font-size: 14px; color: var(--muted); margin-top: 2px; }
+.tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.tag.info { background: var(--info-soft); color: var(--info); }
+.tag.anim { background: var(--anim-soft); color: var(--anim); }
+.tag.skip { background: var(--skip-soft); color: var(--skip); }
+.tag.todo { background: var(--todo-soft); color: var(--todo); }
+
+.format { color: var(--muted); margin: 0 0 12px; font-size: 14px; }
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 16px 0 6px;
+}
+ul { margin: 0; padding-left: 20px; }
+li { margin-block: 3px; }
+li ul { margin-top: 3px; }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--skip-soft);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.key {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 10px 14px;
+  border-radius: 0 4px 4px 0;
+  margin: 16px 0 0;
+}
+.key .label { margin: 0 0 2px; color: var(--accent); }
+.pending { color: var(--muted); font-style: italic; margin: 0; }
+.open-item {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--todo);
+  border-radius: 4px;
+  color: var(--fg);
+}
+.open-item .label { color: var(--todo); margin: 0 0 2px; }
+
+/* pipeline flow */
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.flow li {
+  counter-increment: step;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  position: relative;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.flow li::before {
+  content: counter(step);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+.flow li b { display: block; font-weight: 600; margin-bottom: 2px; }
+.flow li.llm { border-color: var(--accent); background: var(--accent-soft); }
+.legend { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+
+/* table */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; }
+
+.beats table { min-width: 1180px; table-layout: fixed; font-size: 13px; }
+.beats th:nth-child(1) { width: 78px; } .beats th:nth-child(2) { width: 17%; } .beats th:nth-child(3) { width: 14%; } .beats th:nth-child(4) { width: 25%; }
+.beats td:first-child { white-space: nowrap; }
+.beats td:nth-child(4) { background: var(--accent-soft); }
+figure.scene { margin: 0 0 14px; } figure.scene img { display: block; width: 100%; max-width: 960px; margin-inline: auto; border: 1px solid var(--line); border-radius: 4px; }
+.slide > * + .table-scroll, .slide > .table-scroll + p { margin-top: 12px; }
+
+/* tracks */
+.tracks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.track { border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; min-width: 0; }
+.track h4 { font-family: var(--font-display); font-size: 15px; margin: 0 0 6px; }
+.track .owner { font-family: var(--font-mono); font-size: 11px; color: var(--accent); margin: 0 0 8px; }
+.track ul { padding-left: 18px; font-size: 14px; }
+.steps-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.steps-row span { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--accent); color: var(--accent); border-radius: 3px; padding: 2px 6px; }
+
+@media (max-width: 720px) {
+  .flow { grid-template-columns: 1fr; }
+  .tracks { grid-template-columns: 1fr; }
+  .slide { padding: 16px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  nav.tabs a { transition: background 0.15s, color 0.15s; }
+}
+
+.promptbox { position: relative; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.promptbox pre { margin: 0; padding: 14px 16px; padding-top: 44px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.copybtn { position: absolute; top: 8px; right: 8px; font-family: var(--font-mono); font-size: 12px; background: var(--accent); color: var(--surface); border: 0; border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+.copybtn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.official { border: 1px solid var(--line); border-radius: 4px; background: var(--bg); padding: 10px 14px; margin: 0 0 12px; }
+.official .label { margin: 0 0 6px; }
+.official li { font-size: 13.5px; overflow-wrap: anywhere; }
+.official a { color: var(--accent); }
+
+.diagram { border: 1px solid var(--line); border-radius: 4px; padding: 12px; background: var(--surface); overflow-x: auto; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Session 2 · Agent</h1>
+    <p class="lede">How an agent works, what the Claude Agent SDK provides, and what RiskMind adds on top. Slide-by-slide content and presentation format.</p>
+    <div class="stats"><span class="stat"><b>4</b> slides</span><span class="stat"><b>4</b> drafted</span></div>
+  </header>
+
+  
+
+
+
+  <!-- SESSION 2 -->
+  <section class="session" id="s2">
+    <div class="session-head"><h2>Agent</h2><span class="count">4 slides · 4 drafted</span></div>
+    <p class="session-sub">How an agent works, what the Claude Agent SDK provides, and what RiskMind adds on top.</p>
+
+    <article class="slide">
+      <div class="slide-head"><h3>Agent Introduction</h3><span class="tag anim">Animation</span></div>
+      <div class="label">On the slide</div>
+      <ul><li>"An agent is an application that completes a task by planning its own steps and calling tools that read files, run commands, or edit code." (<a href="https://code.claude.com/docs/en/agent-sdk/overview">source</a>)</li><li>An agent is a model running in a loop: decide the next step, call a tool, read the result, decide again, until the task is done</li></ul><p class="format">Visual: A video.</p>
+      <div class="label">To explain</div>
+      <ul><li>The model<ul><li>It makes the decision in each turn</li><li>We do not host any model; we connect to the Model API through Lumina Gateway, the Enterprise model access layer</li><li>It is currently Claude Sonnet. The version may change over time, so the slide names only the model family.</li></ul></li><li>Core Tools<ul><li>Skill, Bash, Read, Edit and Write are used in RiskMind. Glob, Grep and Agent are available but not used.</li><li>All Core Tools come from the Claude Agent SDK. RiskMind has no custom tools of its own.</li><li>Skill is itself a Core Tool: it is how an agent loads a skill (explained in Session 3)</li><li>MCP tools are also tools but are not Core Tools. They appear in the loop and are covered in Session 3.</li><li>Official descriptions (verbatim, <a href="https://code.claude.com/docs/en/tools-reference">source</a>):<ul><li>Skill: "Executes a skill within the main conversation"</li><li>Bash: "Executes shell commands in your environment"</li><li>Read: "Reads the contents of files"</li><li>Edit: "Makes targeted edits to specific files"</li><li>Write: "Creates or overwrites files"</li><li>Glob: "Finds files based on pattern matching"</li><li>Grep: "Searches for patterns in file contents"</li><li>Agent: "Spawns a subagent with its own context window to handle a task"</li></ul></li></ul></li><li>Memory<ul><li>RiskMind uses the Claude Agent SDK's own memory: each chat is one jsonl file</li><li>There is no cross-conversation memory</li></ul></li><li>Walking through the animation<ul><li>Each turn is one step: the model decides, calls a tool, the result is appended to context, and the next turn starts. The Context panel grows with every turn, so the audience sees what enters context.</li><li>A scheduled run is identical to a normal chat: a new chat is opened, and the only difference is that the prompt is generated in the background instead of typed by a user</li><li>Turn 7 is a business skill calling another skill (<code>render_html</code>); this comes back in Session 3</li><li>The agent decides the next step each turn, but the order of the steps is defined by the skill</li></ul></li></ul>
+    </article>
+
+
+    <article class="slide">
+      <div class="slide-head"><h3>Agent Harness</h3><span class="tag info">Static infographic</span></div>
+      <div class="label">On the slide</div>
+      <ul><li>Harness = everything around the LLM that turns a model into an agent</li></ul><div class="diagram"><svg style="display:block;max-width:100%" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 206" width="100%" role="img"><title>What the harness provides</title><desc>Four concentric half-circle layers from inside out: LLM, Agent Harness (Claude Agent SDK), RiskMind Customization, Plugin. The Agent Harness layer is highlighted and points to a box listing the mechanisms it provides: agent loop, core tools, memory, context management, permissions, hooks, system prompt, skill loading, MCP client and subagents.</desc><style>.rm-diagram{--rm-teal-bg:#E1F5EE;--rm-teal-st:#0F6E56;--rm-teal-t:#085041;--rm-teal-s:#0F6E56;--rm-pur-bg:#EEEDFE;--rm-pur-st:#534AB7;--rm-pur-t:#3C3489;--rm-pur-s:#534AB7;--rm-box-bg:#f6f7f8;--rm-box-st:#b9c2ca;--rm-t:#16212b;--rm-s:#5b6a78;--rm-dash:#8e9ba6;--rm-arrow:#7b8894}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rm-diagram{--rm-teal-bg:#085041;--rm-teal-st:#5DCAA5;--rm-teal-t:#E1F5EE;--rm-teal-s:#9FE1CB;--rm-pur-bg:#3C3489;--rm-pur-st:#AFA9EC;--rm-pur-t:#EEEDFE;--rm-pur-s:#CECBF6;--rm-box-bg:#1d2933;--rm-box-st:#4a5a68;--rm-t:#e6ecf1;--rm-s:#93a3b1;--rm-dash:#6b7b88;--rm-arrow:#8fa0ae}}:root[data-theme="dark"] .rm-diagram{--rm-teal-bg:#085041;--rm-teal-st:#5DCAA5;--rm-teal-t:#E1F5EE;--rm-teal-s:#9FE1CB;--rm-pur-bg:#3C3489;--rm-pur-st:#AFA9EC;--rm-pur-t:#EEEDFE;--rm-pur-s:#CECBF6;--rm-box-bg:#1d2933;--rm-box-st:#4a5a68;--rm-t:#e6ecf1;--rm-s:#93a3b1;--rm-dash:#6b7b88;--rm-arrow:#8fa0ae}.rm-th{font:500 14px "IBM Plex Sans",system-ui,sans-serif;fill:var(--rm-t)}.rm-ts{font:400 12px "IBM Plex Sans",system-ui,sans-serif;fill:var(--rm-s)}.rm-teal rect{fill:var(--rm-teal-bg);stroke:var(--rm-teal-st);stroke-width:.5}.rm-teal .rm-th{fill:var(--rm-teal-t)}.rm-teal .rm-ts{fill:var(--rm-teal-s)}.rm-pur rect{fill:var(--rm-pur-bg);stroke:var(--rm-pur-st);stroke-width:.5}.rm-pur .rm-th{fill:var(--rm-pur-t)}.rm-pur .rm-ts{fill:var(--rm-pur-s)}.rm-box{fill:var(--rm-box-bg);stroke:var(--rm-box-st);stroke-width:.5}.rm-dash{fill:none;stroke:var(--rm-dash);stroke-width:.5;stroke-dasharray:4 3}.rm-arr{stroke:var(--rm-arrow);stroke-width:1.5;fill:none}.rm-c-t{fill:var(--rm-teal-bg);stroke:var(--rm-teal-st);stroke-width:.8}.rm-c-b{fill:var(--rm-box-bg);stroke:var(--rm-box-st);stroke-width:.5}</style><defs><marker id="rmx1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g class="rm-diagram"><path class="rm-c-b" d="M15,196 A175,175 0 0 1 365,196 Z"/><path class="rm-c-b" d="M55,196 A135,135 0 0 1 325,196 Z"/><path class="rm-c-t" d="M95,196 A95,95 0 0 1 285,196 Z"/><path class="rm-c-b" d="M140,196 A50,50 0 0 1 240,196 Z"/><text class="rm-ts" x="190" y="46" text-anchor="middle" style="font-size:12px">Plugin</text><text class="rm-ts" x="190" y="90" text-anchor="middle" style="font-size:11.5px">RiskMind Customization</text><g class="rm-teal"><text class="rm-th" x="190" y="124" text-anchor="middle" style="font-size:12px">Agent Harness</text></g><g class="rm-teal"><text class="rm-ts" x="190" y="139" text-anchor="middle" style="font-size:11px">Claude Agent SDK</text></g><text class="rm-th" x="190" y="178" text-anchor="middle" style="font-size:13px">LLM</text><line class="rm-arr" x1="261" y1="168" x2="372" y2="168" marker-end="url(#rmx1)"/><g class="rm-teal"><rect x="376" y="4" width="296" height="196" rx="8"/><text class="rm-th" x="390" y="28" style="font-size:13px">What the harness provides</text></g><rect class="rm-box" x="388" y="40" width="130" height="24" rx="4"/><text class="rm-ts" x="398" y="56" style="font-size:11.5px">Agent Loop</text><rect class="rm-box" x="388" y="70" width="130" height="24" rx="4"/><text class="rm-ts" x="398" y="86" style="font-size:11.5px">Core Tools</text><rect class="rm-box" x="388" y="100" width="130" height="24" rx="4"/><text class="rm-ts" x="398" y="116" style="font-size:11.5px">Memory / session</text><rect class="rm-box" x="388" y="130" width="130" height="24" rx="4"/><text class="rm-ts" x="398" y="146" style="font-size:11.5px">Context management</text><rect class="rm-box" x="388" y="160" width="130" height="24" rx="4"/><text class="rm-ts" x="398" y="176" style="font-size:11.5px">Permissions</text><rect class="rm-box" x="526" y="40" width="130" height="24" rx="4"/><text class="rm-ts" x="536" y="56" style="font-size:11.5px">Hooks</text><rect class="rm-box" x="526" y="70" width="130" height="24" rx="4"/><text class="rm-ts" x="536" y="86" style="font-size:11.5px">System prompt</text><rect class="rm-box" x="526" y="100" width="130" height="24" rx="4"/><text class="rm-ts" x="536" y="116" style="font-size:11.5px">Skill loading</text><rect class="rm-box" x="526" y="130" width="130" height="24" rx="4"/><text class="rm-ts" x="536" y="146" style="font-size:11.5px">MCP client</text><rect class="rm-box" x="526" y="160" width="130" height="24" rx="4"/><text class="rm-ts" x="536" y="176" style="font-size:11.5px">Subagents</text></g></svg></div>
+      <div class="label">To explain</div>
+      <ul><li>Rule of thumb: everything except the LLM is the harness. In RiskMind the harness is the Claude Agent SDK, which is why the layer is labeled that way.</li><li>The picture: four layers drawn as half circles, from the inside out: LLM, Agent Harness, RiskMind Customization, Plugin. This slide highlights the Harness layer only. The same picture comes back on the next slides with a different layer highlighted: Customization on the next slide, and Plugin in Session 3.</li><li>What the harness provides: the ten mechanisms in the box. These are mechanisms only; what we put into them comes on the next slide.<ul><li>Agent Loop, Core Tools and Memory / session were introduced on the Agent Introduction slide</li><li>Hooks and System prompt are mechanisms here. Our own hooks and our CLAUDE.md are Customization, on the next slide.</li></ul></li><li>Why the harness matters<ul><li>Same model, different harness, different agent</li><li>The model decides; the harness makes the decision executable, safe, and repeatable</li><li>Most of what we rely on in production (tool execution, session handling, permissions) is in the harness, not in the prompt</li></ul></li><li>Key point to land: the harness is the part that is not specific to risk. Everything specific to RiskMind is added on top of it, which is the next slide.</li></ul>
+      <div class="label">Notes (not on the slide)</div>
+      <ul><li>Use the same split on this slide and the next: a mechanism belongs to the harness, our content in that mechanism belongs to Customization (for example, hooks as a mechanism are harness, our approve hook is Customization)</li><li>The slide should stay consistent if Claude Agent SDK is replaced later; keep SDK-specific naming to a minimum</li></ul>
+    </article>
+
+    <article class="slide">
+      <div class="slide-head"><h3>RiskMind Customization on Agent Harness</h3><span class="tag info">Static infographic</span></div>
+      <div class="label">On the slide</div>
+      <ul><li>The harness gives us the mechanisms; Customization is what we put in them</li><li>No custom tools: all Core Tools come from the Claude Agent SDK; business capability comes from skills and MCP</li></ul><div class="diagram"><svg style="display:block;max-width:100%" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 206" width="100%" role="img"><title>What RiskMind Customization adds</title><desc>Four concentric half-circle layers from inside out: LLM, Agent Harness (Claude Agent SDK), RiskMind Customization, Plugin. The RiskMind Customization layer is highlighted and points to a box listing what we add: CLAUDE.md as our system prompt, hooks for human in the loop on Bash, and the Skill: render_html.</desc><style>.rm-diagram{--rm-teal-bg:#E1F5EE;--rm-teal-st:#0F6E56;--rm-teal-t:#085041;--rm-teal-s:#0F6E56;--rm-pur-bg:#EEEDFE;--rm-pur-st:#534AB7;--rm-pur-t:#3C3489;--rm-pur-s:#534AB7;--rm-box-bg:#f6f7f8;--rm-box-st:#b9c2ca;--rm-t:#16212b;--rm-s:#5b6a78;--rm-dash:#8e9ba6;--rm-arrow:#7b8894}@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rm-diagram{--rm-teal-bg:#085041;--rm-teal-st:#5DCAA5;--rm-teal-t:#E1F5EE;--rm-teal-s:#9FE1CB;--rm-pur-bg:#3C3489;--rm-pur-st:#AFA9EC;--rm-pur-t:#EEEDFE;--rm-pur-s:#CECBF6;--rm-box-bg:#1d2933;--rm-box-st:#4a5a68;--rm-t:#e6ecf1;--rm-s:#93a3b1;--rm-dash:#6b7b88;--rm-arrow:#8fa0ae}}:root[data-theme="dark"] .rm-diagram{--rm-teal-bg:#085041;--rm-teal-st:#5DCAA5;--rm-teal-t:#E1F5EE;--rm-teal-s:#9FE1CB;--rm-pur-bg:#3C3489;--rm-pur-st:#AFA9EC;--rm-pur-t:#EEEDFE;--rm-pur-s:#CECBF6;--rm-box-bg:#1d2933;--rm-box-st:#4a5a68;--rm-t:#e6ecf1;--rm-s:#93a3b1;--rm-dash:#6b7b88;--rm-arrow:#8fa0ae}.rm-th{font:500 14px "IBM Plex Sans",system-ui,sans-serif;fill:var(--rm-t)}.rm-ts{font:400 12px "IBM Plex Sans",system-ui,sans-serif;fill:var(--rm-s)}.rm-teal rect{fill:var(--rm-teal-bg);stroke:var(--rm-teal-st);stroke-width:.5}.rm-teal .rm-th{fill:var(--rm-teal-t)}.rm-teal .rm-ts{fill:var(--rm-teal-s)}.rm-pur rect{fill:var(--rm-pur-bg);stroke:var(--rm-pur-st);stroke-width:.5}.rm-pur .rm-th{fill:var(--rm-pur-t)}.rm-pur .rm-ts{fill:var(--rm-pur-s)}.rm-box{fill:var(--rm-box-bg);stroke:var(--rm-box-st);stroke-width:.5}.rm-dash{fill:none;stroke:var(--rm-dash);stroke-width:.5;stroke-dasharray:4 3}.rm-arr{stroke:var(--rm-arrow);stroke-width:1.5;fill:none}.rm-c-t{fill:var(--rm-teal-bg);stroke:var(--rm-teal-st);stroke-width:.8}.rm-c-b{fill:var(--rm-box-bg);stroke:var(--rm-box-st);stroke-width:.5}</style><defs><marker id="rmx1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g class="rm-diagram"><path class="rm-c-b" d="M15,196 A175,175 0 0 1 365,196 Z"/><path class="rm-c-t" d="M55,196 A135,135 0 0 1 325,196 Z"/><path class="rm-c-b" d="M95,196 A95,95 0 0 1 285,196 Z"/><path class="rm-c-b" d="M140,196 A50,50 0 0 1 240,196 Z"/><text class="rm-ts" x="190" y="46" text-anchor="middle" style="font-size:12px">Plugin</text><g class="rm-teal"><text class="rm-th" x="190" y="90" text-anchor="middle" style="font-size:11.5px">RiskMind Customization</text></g><text class="rm-ts" x="190" y="124" text-anchor="middle" style="font-size:12px">Agent Harness</text><text class="rm-ts" x="190" y="139" text-anchor="middle" style="font-size:11px">Claude Agent SDK</text><text class="rm-th" x="190" y="178" text-anchor="middle" style="font-size:13px">LLM</text><line class="rm-arr" x1="306" y1="168" x2="372" y2="168" marker-end="url(#rmx1)"/><g class="rm-teal"><rect x="376" y="64" width="296" height="136" rx="8"/><text class="rm-th" x="390" y="88" style="font-size:13px">What RiskMind Customization adds</text></g><rect class="rm-box" x="388" y="100" width="272" height="24" rx="4"/><text class="rm-ts" x="398" y="116" style="font-size:11.5px">CLAUDE.md: our system prompt</text><rect class="rm-box" x="388" y="130" width="272" height="24" rx="4"/><text class="rm-ts" x="398" y="146" style="font-size:11.5px">Hooks: human in the loop on Bash</text><rect class="rm-box" x="388" y="160" width="272" height="24" rx="4"/><text class="rm-ts" x="398" y="176" style="font-size:11.5px">Skill: render_html</text></g></svg></div>
+      <div class="label">To explain</div>
+      <ul><li>The picture: the same layers as the previous slide, now with the Customization layer highlighted. The box lists the three things we add.</li><li>CLAUDE.md: our custom system prompt for RiskMind<ul><li>CLAUDE.md: "instructions you write to give Claude persistent context" (<a href="https://code.claude.com/docs/en/memory">source</a>)</li><li>Claude treats it as context, not as enforcement: "Claude treats them as context, not enforced configuration. To block an action regardless of what Claude decides, use a PreToolUse hook instead." (<a href="https://code.claude.com/docs/en/memory">source</a>)</li></ul></li><li>Hooks: human in the loop. Bash execution needs the user's approval before it runs.<ul><li>It is a PreToolUse hook with a Bash matcher</li><li>Hooks: "Hooks are user-defined shell commands. Claude Code runs them at specific points in its lifecycle, which gives you deterministic control: certain actions always happen rather than relying on the LLM to choose to run them." (<a href="https://code.claude.com/docs/en/hooks-guide">source</a>)</li><li>PreToolUse: "Before a tool call executes. Can block it" (<a href="https://code.claude.com/docs/en/hooks-guide">source</a>)</li><li>Matchers: "Without a matcher, a hook fires on every occurrence of its event. Matchers let you narrow that down." (<a href="https://code.claude.com/docs/en/hooks-guide">source</a>) Ours is Bash, so the approval applies to Bash only.</li><li>Why a hook and not the model: an approval that must always happen cannot be left to the LLM or to a prompt. Anything that must be exact is done in code, not by the LLM.</li></ul></li><li>Skill: <code>render_html</code><ul><li>Almost every plugin needs it, so it sits in this layer and not inside any one plugin</li><li>Combines each section's comment and figure into the HTML report</li></ul></li><li>No custom tools: all Core Tools come from the Claude Agent SDK. Business capability comes from skills and MCP.</li><li>Scope: this slide covers customization of the agent harness only. Backend and frontend implementation are a different layer and are not listed here.</li><li>Next: the Plugin layer and why we decouple the agent from the plugin</li></ul>
+      <div class="label">Notes (not on the slide)</div>
+      <ul><li>The closing message about decoupling (Agent and Plugin are decoupled) is on the next slide, Why Agent + Plugin, and not here.</li></ul>
+    </article>
+
+    <article class="slide">
+      <div class="slide-head"><h3>Why Agent + Plugin<span class="subtitle">Decoupling</span></h3><span class="tag info">Static comparison</span></div>
+      <div class="label">On the slide</div>
+      <ul><li>Core principle: business knowledge and the LLM-related process must be decoupled</li><li>The Agent and the Plugin are decoupled<ul><li>Adding plugins does not change the three inner layers</li><li>Changing the agent does not affect plugins</li><li>A Local Risk Manager only needs to know how a plugin works</li></ul></li></ul><div class="table-scroll"><table><thead><tr><th></th><th>Workflow (graph-based)</th><th>Agent + Tools (all processes as tools)</th><th>Agent + Plugin</th></tr></thead><tbody><tr><td>Next step</td><td>The graph, in code</td><td>The agent, in the order the prompt describes</td><td>The agent, guided by the skill</td></tr><tr><td>What gets loaded</td><td>Fixed in the graph</td><td>The user picks the product; the system loads that product's prompt and tools</td><td>The agent sees every skill's name and description, picks one and loads it</td></tr><tr><td>Business knowledge lives in</td><td>Code: nodes and edges</td><td>Code: custom tools, plus the prompt</td><td>Plugin: skills and shared references</td></tr><tr><td>Exceptions</td><td>Each case needs its own node and edge</td><td>Handled by the agent</td><td>Handled by the agent</td></tr><tr><td>Add a new product</td><td>A new graph: new nodes, new edges, update the router, redeploy</td><td>A new prompt and new tools, written by developers</td><td>A new plugin folder, written by the Local Risk Manager. The agent does not change.</td></tr><tr><td>Add a new metric</td><td>New nodes in each product's graph</td><td>New tools for each product</td><td>A new skill folder in each product's plugin</td></tr></tbody></table></div>
+      <div class="label">To explain</div>
+      <ul><li>Why this slide: the earlier slides showed what RiskMind is built from. This one explains why we chose Agent + Plugin, given that we expect to keep adding products and metrics (the Expansion slide). It compares against the two other ways we could have built it.</li><li>Core principle: otherwise every business knowledge update touches the workflow, and every new platform feature touches the business knowledge<ul><li>Changing the agent does not affect plugins: upgrade the Claude Agent SDK, or even stop using it one day, and plugins are unaffected</li><li>During expansion, a Local Risk Manager never has to touch anything on the Agent side</li></ul></li><li>The two alternatives<ul><li>Workflow (graph-based): defined on the AI Tools Landscape slide, predefined code paths, with every step a node and every transition an edge</li><li>Agent + Tools (all processes as tools): still an agent loop, so it handles exceptions itself, but there are no skills. Each step of the process is a custom tool (a Python function), and the whole process is described in a natural-language prompt. Each product is its own ReAct flow with its own prompt and its own tools. The user picks the product, and the system loads that product's prompt and tools. The agent cannot load anything by itself.</li><li>Agent + Plugin: the agent keeps a small set of general Core Tools, and business knowledge lives in skills. The agent sees each skill's name and description, picks what it needs, and loads it on demand.</li><li>Official description of the difference between custom tools and skills: "To add custom tools, connect an MCP server. To extend Claude with reusable prompt-based workflows, write a skill, which runs through the existing Skill tool rather than adding a new tool entry." (<a href="https://code.claude.com/docs/en/tools-reference">source</a>)</li></ul></li><li>Who builds it<ul><li>A skill describes the process in natural language, and the exact steps are plain, independent Python scripts. A workflow also needs the orchestration written as code (graph, nodes, edges), and all processes as tools needs developers to write the tools.</li><li>Skills can be read and reviewed by risk colleagues, evaluated as a unit (AutoEval), and generated through conversation (AutoSkill)</li></ul></li><li>How it grows<ul><li>A new analysis, or even a single ad-hoc analysis, is a new skill folder. A workflow needs a new graph each time.</li><li>A small process change is an edit in the skill. In a workflow it can ripple across code.</li><li>Skills ship as plugins as content, so a skill change needs no code release</li></ul></li><li>How it is managed<ul><li>Skills use progressive disclosure. A router plus many workflows becomes hard to manage as workflows multiply.</li><li>Scripts stay independent files inside the skill. A workflow forces each one to be wrapped as a node.</li><li>A skill is a folder, so access can be managed with folder access</li></ul></li><li>How it behaves<ul><li>Drill-down and ad-hoc are natural language in chat, with follow-ups, and stay in one context</li><li>Exceptions (missing parameter, script error, unexpected data) are handled by the agent. A workflow needs an explicit node and edge for each case.</li></ul></li><li>Where determinism lives: all data-critical steps are scripts. The agent orders and triggers them, and only the comments are LLM-generated.</li><li>Key message: the difference is who decides what gets loaded, and where business knowledge lives. With all processes as tools, the user and the system decide, and the knowledge sits in the agent's code. With Agent + Plugin, the agent decides, and the knowledge sits in the plugin.</li></ul>
+      <div class="label">Notes (not on the slide)</div>
+      <ul><li>Do not name specific frameworks or other teams' approaches on this slide. Do not mention earlier attempts or failed cases. The message is that Agent + Plugin fits our use case, given expansion.</li><li>This slide absorbs the old Session 3 slide "Core Tools + Skill vs. All Processes as Tools". The animations ("add a new desk", and the side-by-side loading animation) were dropped; the table carries the effort gap.</li></ul>
+    </article>
+  </section>
+
+
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById('copy-prompt');
+  var src = document.getElementById('code-check-prompt');
+  if (!btn || !src) return;
+  function selectText() {
+    var r = document.createRange(); r.selectNodeContents(src);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  btn.addEventListener('click', function () {
+    var done = function (ok) {
+      btn.textContent = ok ? 'Copied' : 'Press Ctrl/Cmd+C';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+    };
+    try {
+      navigator.clipboard.writeText(src.textContent).then(function () { done(true); }, function () { selectText(); done(false); });
+    } catch (e) { selectText(); done(false); }
+  });
+})();
+</script>
+
+</body></html>

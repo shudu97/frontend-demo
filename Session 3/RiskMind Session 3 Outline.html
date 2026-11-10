@@ -1,0 +1,457 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>RiskMind Session 3 Outline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a review outline. Sticky session tabs on top, one column of slide cards, each card = title, format tag, bullets, optional diagram block. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --fg: #16212b;
+  --muted: #5b6a78;
+  --line: #d9e0e6;
+  --accent: #0f5f7a;
+  --accent-soft: #dcecf2;
+  --anim: #8a4b08;
+  --anim-soft: #fbe9d3;
+  --info: #0f5f7a;
+  --info-soft: #dcecf2;
+  --skip: #5b6a78;
+  --skip-soft: #e6eaee;
+  --todo: #7a2e5a;
+  --todo-soft: #f4dfeb;
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f161c;
+    --surface: #17212a;
+    --fg: #e6ecf1;
+    --muted: #93a3b1;
+    --line: #2a3844;
+    --accent: #6fc3dc;
+    --accent-soft: #163645;
+    --anim: #f0b36c;
+    --anim-soft: #3a2a14;
+    --info: #6fc3dc;
+    --info-soft: #163645;
+    --skip: #93a3b1;
+    --skip-soft: #222e38;
+    --todo: #e7a3cb;
+    --todo-soft: #3a1f30;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f161c;
+  --surface: #17212a;
+  --fg: #e6ecf1;
+  --muted: #93a3b1;
+  --line: #2a3844;
+  --accent: #6fc3dc;
+  --accent-soft: #163645;
+  --anim: #f0b36c;
+  --anim-soft: #3a2a14;
+  --info: #6fc3dc;
+  --info-soft: #163645;
+  --skip: #93a3b1;
+  --skip-soft: #222e38;
+  --todo: #e7a3cb;
+  --todo-soft: #3a1f30;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-inline: 16px;
+  padding-block: 0 64px;
+}
+.wrap { max-width: 1440px; margin-inline: auto; }
+.diagram svg { max-width: 1100px !important; margin-inline: auto; }
+header.top { padding-block: 32px 20px; }
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.1;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.lede { color: var(--muted); margin: 0; max-width: 80ch; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.stat {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 4px 10px;
+  color: var(--muted);
+}
+.stat b { color: var(--fg); font-weight: 500; }
+
+nav.tabs {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-block: 8px;
+  margin-inline: -16px;
+  padding-inline: 16px;
+}
+nav.tabs a {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+nav.tabs a:hover, nav.tabs a:focus-visible { background: var(--accent-soft); color: var(--accent); outline: none; }
+nav.tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+section.session { padding-top: 36px; scroll-margin-top: 56px; }
+.session-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.session-head h2 { font-family: var(--font-display); font-size: 26px; margin: 0; }
+.session-head .count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.session-sub { color: var(--muted); margin: 0 0 16px; }
+
+.slide {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+.slide-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.slide-head h3 { font-family: var(--font-display); font-size: 20px; line-height: 1.2; margin: 0; text-wrap: balance; }
+.slide-head .subtitle { display: block; font-family: var(--font-body); font-weight: 400; font-size: 14px; color: var(--muted); margin-top: 2px; }
+.tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.tag.info { background: var(--info-soft); color: var(--info); }
+.tag.anim { background: var(--anim-soft); color: var(--anim); }
+.tag.skip { background: var(--skip-soft); color: var(--skip); }
+.tag.todo { background: var(--todo-soft); color: var(--todo); }
+
+.format { color: var(--muted); margin: 0 0 12px; font-size: 14px; }
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 16px 0 6px;
+}
+ul { margin: 0; padding-left: 20px; }
+li { margin-block: 3px; }
+li ul { margin-top: 3px; }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--skip-soft);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.key {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 10px 14px;
+  border-radius: 0 4px 4px 0;
+  margin: 16px 0 0;
+}
+.key .label { margin: 0 0 2px; color: var(--accent); }
+.pending { color: var(--muted); font-style: italic; margin: 0; }
+.open-item {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--todo);
+  border-radius: 4px;
+  color: var(--fg);
+}
+.open-item .label { color: var(--todo); margin: 0 0 2px; }
+
+/* pipeline flow */
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.flow li {
+  counter-increment: step;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  position: relative;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.flow li::before {
+  content: counter(step);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+.flow li b { display: block; font-weight: 600; margin-bottom: 2px; }
+.flow li.llm { border-color: var(--accent); background: var(--accent-soft); }
+.legend { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+
+/* table */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; }
+
+.beats table { min-width: 1180px; table-layout: fixed; font-size: 13px; }
+.beats th:nth-child(1) { width: 78px; } .beats th:nth-child(2) { width: 17%; } .beats th:nth-child(3) { width: 14%; } .beats th:nth-child(4) { width: 25%; }
+.beats td:first-child { white-space: nowrap; }
+.beats td:nth-child(4) { background: var(--accent-soft); }
+figure.scene { margin: 0 0 14px; } figure.scene img { display: block; width: 100%; max-width: 960px; margin-inline: auto; border: 1px solid var(--line); border-radius: 4px; }
+.slide > * + .table-scroll, .slide > .table-scroll + p { margin-top: 12px; }
+
+/* tracks */
+.tracks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.track { border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; min-width: 0; }
+.track h4 { font-family: var(--font-display); font-size: 15px; margin: 0 0 6px; }
+.track .owner { font-family: var(--font-mono); font-size: 11px; color: var(--accent); margin: 0 0 8px; }
+.track ul { padding-left: 18px; font-size: 14px; }
+.steps-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.steps-row span { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--accent); color: var(--accent); border-radius: 3px; padding: 2px 6px; }
+
+@media (max-width: 720px) {
+  .flow { grid-template-columns: 1fr; }
+  .tracks { grid-template-columns: 1fr; }
+  .slide { padding: 16px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  nav.tabs a { transition: background 0.15s, color 0.15s; }
+}
+
+.promptbox { position: relative; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.promptbox pre { margin: 0; padding: 14px 16px; padding-top: 44px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.copybtn { position: absolute; top: 8px; right: 8px; font-family: var(--font-mono); font-size: 12px; background: var(--accent); color: var(--surface); border: 0; border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+.copybtn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.official { border: 1px solid var(--line); border-radius: 4px; background: var(--bg); padding: 10px 14px; margin: 0 0 12px; }
+.official .label { margin: 0 0 6px; }
+.official li { font-size: 13.5px; overflow-wrap: anywhere; }
+.official a { color: var(--accent); }
+
+.diagram { border: 1px solid var(--line); border-radius: 4px; padding: 12px; background: var(--surface); overflow-x: auto; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Session 3 · Plugin</h1>
+    <p class="lede">How Plugins, Skills, and MCP extend the agent. Slide-by-slide content and presentation format. Two slides are on hold until the skill restructure and the code check are done.</p>
+    <div class="stats"><span class="stat"><b>4</b> slides</span><span class="stat"><b>2</b> drafted</span><span class="stat"><b>2</b> on hold</span></div>
+  </header>
+
+  
+
+
+
+
+
+  <!-- SESSION 3 -->
+  <section class="session" id="s3">
+    <div class="session-head"><h2>Plugin</h2><span class="count">4 slides · 2 drafted</span></div>
+    <p class="session-sub">How Plugins, Skills, and MCP extend the agent.</p>
+    <article class="slide">
+      <div class="slide-head"><h3>Plugin Introduction</h3><span class="tag info">Static infographic</span></div>
+      <p class="format">Static infographic with a short zoom-in. Open with the concentric diagram: all four layers drawn, only the outermost layer (Plugin) highlighted and the three inner layers grayed. Then zoom into a folder tree, and the arrows from each skill to the reference files appear one by one.</p>
+      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Plugin: &ldquo;A Claude Code plugin is a directory of skills, agents, hooks, MCP servers, or other components that Claude Code installs and loads as one unit.&rdquo; <a href="https://code.claude.com/docs/en/plugins" target="_blank" rel="noopener">Claude Code plugins overview</a></li><li>When to use one: &ldquo;Use a plugin when you want several skills, subagents, hooks, or MCP servers packaged as one unit.&rdquo; <a href="https://code.claude.com/docs/en/plugins" target="_blank" rel="noopener">Claude Code plugins overview</a></li><li>In the Agent SDK: &ldquo;Package skills, agents, hooks, and MCP servers, and load them by local path&rdquo; <a href="https://code.claude.com/docs/en/agent-sdk/overview" target="_blank" rel="noopener">Agent SDK overview</a></li></ul></div>
+      <div class="label">Bullets</div>
+      <ul>
+        <li>Why we introduce plugins: RiskMind is an Agent + Plugin system. Risk Managers work mainly on the plugin side, and all business context reaches the agent through plugins.</li>
+        
+        <li>What is in a RiskMind plugin
+          <ul>
+            <li>One plugin per product (for example, FX Option)</li>
+            <li>One skill per metric inside it (today Stress P&amp;L; VaR and Sensitivities are possible next)</li>
+            
+            <li>MCP configuration for the data sources that product needs</li>
+            <li>Shared knowledge does not sit inside a plugin. It sits in the parent folder of the plugins and is shared by all of them.</li>
+          </ul>
+        </li>
+        <li>Plugin and agent are decoupled (a short reminder; the full message is on the Why Agent + Plugin slide)
+          <ul>
+            <li>The agent only needs to be pointed at the plugin folder</li>
+            <li>Adding or changing a plugin does not touch the agent, so a Local Risk Manager only needs to know how a plugin works</li>
+          </ul>
+        </li>
+        <li>Why a plugin and not standalone skills
+          <ul>
+            <li>Distribution: all metrics of a product ship together as one unit</li>
+            <li>One picture: business knowledge (skills) and data access (MCP) live in the same unit</li>
+            <li>Write once, refer many: the shared reference folder in the parent folder of the plugins holds what all products share, such as the enterprise scenario descriptions, the shock definitions, and the top-down analysis process. It is maintained in one place, and each skill says when to refer to which file.</li>
+          </ul>
+        </li>
+      </ul>
+      <div class="label">Folder tree (content labels only)</div>
+      <div class="table-scroll"><pre style="margin:0;padding:12px 14px;font-family:var(--font-mono);font-size:13px;line-height:1.5;">plugins/                         parent folder of all plugins
+├── reference/                   shared knowledge, used by all plugins
+│   ├── enterprise scenario descriptions
+│   ├── shock definitions
+│   └── top-down analysis process
+├── fx-option/                   plugin, one per product
+│   ├── skills/
+│   │   ├── stress-pnl/          one skill per metric
+│   │   ├── var/                 (planned)
+│   │   └── sensitivities/       (planned)
+│   └── MCP configuration        data sources this product needs
+├── muni/
+└── ig-canada/</pre></div>
+      <div class="key">
+        <div class="label">Speaker notes (not on the slide)</div>
+        MCP and data sources are owned by the Agent Serving Team. Skills and the shared reference folder are what Local Risk Managers write and maintain.
+      </div>
+    </article>
+    <article class="slide">
+      <div class="slide-head"><h3>Skill Introduction<span class="subtitle">Components</span></h3><span class="tag info">Static infographic</span></div>
+      <p class="format">Built up piece by piece. Start with the skill as a folder, then each component appears in turn: SKILL.md (meta, then detail), scripts, references. The last frame shows the arrows from SKILL.md to scripts and references.</p>
+      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Agent Skills: &ldquo;organized folders of instructions, scripts, and resources that agents can discover and load dynamically to perform better at specific tasks&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li><li>Bundled files: &ldquo;skills can bundle additional files within the skill directory and reference them by name from SKILL.md. These additional linked files are the third level (and beyond) of detail, which Claude can choose to navigate and discover only as needed.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li><li>Code: &ldquo;Skills can also include code for Claude to execute as tools at its discretion.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li></ul></div>
+      <div class="label">Bullets</div>
+      <ul>
+        <li>What a skill is
+          <ul>
+            
+            <li>In RiskMind, one skill is one metric's analysis for one product</li>
+            <li>The Risk Manager writes the whole skill: the analysis process in natural language (SKILL.md), the scripts, and any references</li>
+          </ul>
+        </li>
+        <li>SKILL.md, in two layers
+          <ul>
+            <li>Meta: name and description. It tells the agent what the skill is and when to use it.</li>
+            <li>Detail: the body of the file. It describes the analyses (Portfolio Analysis, Drill Down, Ad-hoc), defines the slash command and its parameters, and says which references to read and which scripts to run.</li>
+            <li>Each skill writes only what is specific to its own metric; shared knowledge lives in references</li>
+          </ul>
+        </li>
+        <li>scripts
+          <ul>
+            <li>Python code that does the exact work (data processing, visualization); it lives inside the skill and is written by the Risk Manager as part of the skill</li>
+            <li>Each script is written as a CLI: it has a command-line entry point, takes parameters (for example the file location from the previous step), and writes its output</li>
+            <li>The agent runs it with Bash, so SKILL.md states the command and its parameters</li>
+          </ul>
+        </li>
+        <li>references
+          <ul>
+            <li>Knowledge files the agent reads only when needed</li>
+            <li>Two places: the skill's own folder (specific to one metric, optional) and the shared reference folder in the parent folder of the plugins (shared across all products)</li>
+            <li>SKILL.md states when to read which file and where it is</li>
+          </ul>
+        </li>
+        <li>SKILL.md is the entry point: scripts and references are used because SKILL.md mentions them</li>
+      </ul>
+      <div class="label">Folder tree (content labels only)</div>
+      <div class="table-scroll"><pre style="margin:0;padding:12px 14px;font-family:var(--font-mono);font-size:13px;line-height:1.5;">plugins/                             parent folder of all plugins
+├── reference/                       shared across all products
+└── fx-option/                       plugin
+    └── skills/
+        └── stress-pnl/              skill, one per metric
+            ├── SKILL.md             meta (name, description) + detail
+            ├── scripts              CLI scripts
+            └── references           metric-specific knowledge (optional)</pre></div>
+      <div class="open-item">
+        <div class="label">Open item</div>
+        The structure of the detail layer. It will be refined after the skill restructure, so the slide shows only the two layers and the kinds of content in the detail layer, not a template.
+      </div>
+    </article>
+    <article class="slide"><div class="slide-head"><h3>Skill<span class="subtitle">Walk Through One Real Example</span></h3><span class="tag todo">To do</span></div><p class="pending">On hold until the skill restructure is done; it needs a real skill from the restructured version. Use a real skill and play a Context-panel animation (same visual as Agent Introduction). Merged in from the removed "How Agent Work with Skill" slide: before loading, the agent sees only each skill's name and description and picks by description; reference files are read only when the condition in SKILL.md is met; a command and its parameters in SKILL.md become one Bash call.</p>
+      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Preloading: &ldquo;At startup, the agent pre-loads the name and description of every installed skill into its system prompt.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li><li>Progressive disclosure: &ldquo;Progressive disclosure is the core design principle that makes Agent Skills flexible and scalable.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li></ul></div></article>
+    <article class="slide">
+      <div class="slide-head"><h3>MCP Introduction</h3><span class="tag todo">On hold</span></div>
+      <p class="format">On hold until the query catalog design is confirmed from the code. ATOM MCP is the working example.</p>
+      <div class="label">Confirmed so far</div>
+      <ul>
+        <li>The MCP server today is ATOM</li>
+        <li>Official definition to quote on the slide (verbatim)
+          <ul>
+            <li>MCP docs: &ldquo;MCP (Model Context Protocol) is an open-source standard for connecting AI applications to external systems.&rdquo; and &ldquo;Think of MCP like a USB-C port for AI applications.&rdquo; <a href="https://modelcontextprotocol.io/docs/getting-started/intro" target="_blank" rel="noopener">modelcontextprotocol.io</a></li>
+            <li>Anthropic announcement: &ldquo;an open standard for connecting AI assistants to the systems where data lives&rdquo;. The problem: &ldquo;Every new data source requires its own custom implementation, making truly connected systems difficult to scale&rdquo;. The answer: &ldquo;a universal, open standard for connecting AI systems with data sources, replacing fragmented integrations with a single protocol&rdquo;. <a href="https://www.anthropic.com/news/model-context-protocol" target="_blank" rel="noopener">anthropic.com</a></li>
+          </ul>
+        </li>
+        <li>How it appears to the agent: as tools it can call in the Agent Loop (MCP tools are not Core Tools, but they are called the same way)</li>
+        <li>Each skill exposes to the agent only the queries that skill needs (stated by the Agent Serving Team)</li>
+        <li>MCP Gateway (built by the Agent Serving Team): every MCP connects to the RiskMind agent through it, giving unified access management and connection</li>
+      </ul>
+      <div class="label">To cover on the slide</div>
+      <ul>
+        <li>What MCP is, why we use MCP to connect data, and why we do not use text-to-SQL</li>
+      </ul>
+      <div class="label">Pending</div>
+      <ul>
+        <li>Where the query catalog lives: registered on the MCP server and filtered per skill, or defined in the skill and sent to the MCP by the agent after it reads the skill</li>
+        <li>The reasons for MCP over text-to-SQL</li>
+      </ul>
+      <div class="label">Code check: prompt to run on the company computer</div>
+      <p class="format">Paste this into an agent that has the codebase. It is read-only. Sanitize the answer before bringing it back.</p>
+      <div class="promptbox">
+        <button type="button" class="copybtn" id="copy-prompt">Copy</button>
+        <pre id="code-check-prompt">Please inspect our codebase read-only (do not modify anything, do not run anything that writes data) and answer the questions below about how the ATOM MCP server and the RiskMind skills work together. For every answer, give the file path and a short sanitized code snippet (no secrets, no real data, no internal hostnames).
+
+Context: RiskMind is an agent that runs Skills (in a plugin) and fetches data through an MCP server called ATOM. The Agent Serving Team says each skill exposes to the agent only the queries relevant to that skill. I need to know which of these two designs is the real one:
+
+  Design A: all queries are registered on the MCP server (a query catalog), and the server filters which ones are visible per skill.
+  Design B: the MCP server only offers general tools (for example a "run query" tool), and the query catalog is defined in the skill; the agent reads the skill and sends the query to the MCP to run.
+  (It may also be a mix of the two, or something else. Describe what the code actually does.)
+
+Questions:
+1. Where is the query catalog defined? Give the file(s) and the format (for example yaml, json, python dict, SQL files). Is it on the MCP server side, in the skill / plugin folder, or both?
+2. What tools does the ATOM MCP server expose to the agent? List each tool's name, its parameters, and what it returns.
+3. How is "each skill sees only its own queries" implemented? Is it a filter on the server, a parameter the agent passes, a naming convention, an allowlist, or something else? Which component decides which queries a skill may run?
+4. When the agent fetches data, what exactly does it send to the MCP: a query name or ID plus parameters, or SQL text? Show a real example of the call shape (with fake values).
+5. What does the MCP return? In the Portfolio Analysis pipeline the data is saved to a folder and the MCP returns the file location. Show where that happens in the code.
+6. To add queries for a new product, which files must be changed, by whom, and does the MCP server need to be redeployed or restarted?
+7. How does the MCP Gateway sit in the path between the RiskMind agent and the ATOM MCP server? What does it do in the code or config (authentication, routing, access control)? If the gateway code is not in this repo, say so.
+
+At the end, give me a 5-line summary: which design (A, B, or mixed) is the real one, where the query catalog lives, and what a Local Risk Manager would have to change to add a new product.</pre>
+      </div>
+    </article>
+  </section>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById('copy-prompt');
+  var src = document.getElementById('code-check-prompt');
+  if (!btn || !src) return;
+  function selectText() {
+    var r = document.createRange(); r.selectNodeContents(src);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  btn.addEventListener('click', function () {
+    var done = function (ok) {
+      btn.textContent = ok ? 'Copied' : 'Press Ctrl/Cmd+C';
+      setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+    };
+    try {
+      navigator.clipboard.writeText(src.textContent).then(function () { done(true); }, function () { selectText(); done(false); });
+    } catch (e) { selectText(); done(false); }
+  });
+})();
+</script>
+
+</body></html>

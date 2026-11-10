@@ -1,0 +1,1781 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RiskMind Session 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap">
+<!--
+  RiskMind training · Session 2 master file. Scene 1: Agent Introduction (later scenes get merged in here).
+  Restyled to match Session 1: DM Sans / DM Mono, white background, blue palette only (no green, purple or teal),
+  Title Case labels, arrows as grey lines with chevron heads, Session 1 playback (stops at every turn).
+  One real fxo-stress-pnl run (2026-08-11 vs 2026-08-10, GLOBALFINANCIALCRISISABS), turn by turn.
+  Style: explainer (one idea per scene, built step by step, labels next to what they name).
+  Layout: Context (left) · the Agent Loop (middle, drawn as in the Claude Agent SDK docs) · Files on disk (right:
+  RiskMind built-ins, three Plugins the agent picks from, and the Workspace this run writes),
+  with a step tracker + caption along the bottom.
+  After each tool runs, its output splits three ways:
+    file → Files on disk · location/result → back to the LLM along "tool result" · a block → Context.
+  Every frame is drawn by render(t) from the time alone (no CSS transitions, no timers),
+  so the same t always gives the same picture. That is what makes frame-by-frame export work.
+
+  Live controls: Space play/pause · ←/→ previous/next turn · Home restart · F (or double-click) full screen
+  Playback stops by itself at every turn; Space plays on to the next one. Bottom-right buttons: play/pause, full screen
+  Export: open with ?export=1 and call window.renderAt(t) per frame (see export.mjs)
+-->
+<style>
+:root{
+  --bg:#FFFFFF; --soft:#F3F6FA; --surface:#ffffff; --fg:#16243A; --muted:#66778C; --line:#D5DEE9;
+  --accent:#1C5BB5; --accent-soft:#EAF2FE;                       /* blue only, as in Session 1 */
+  --pur-bg:#E3EDFC; --pur-st:#5B8FD9; --pur-t:#164E9E;           /* Skill */
+  --teal-bg:#EEF4FD; --teal-st:#7FA9E6; --teal-t:#1C5BB5;        /* Bash, MCP */
+  --neu-bg:#F3F5F8; --neu-st:#98A3B0; --neu-t:#45515F;           /* Read, Edit */
+  --llm-bg:#FFFFFF; --llm-st:#1A73E8; --llm-t:#1A73E8;           /* what the LLM writes: highlighted, as in Session 1's 4b */
+  --base-bg:#ffffff; --base-st:#BCC6D2; --base-t:#45515F;
+  --done-bg:#EAF2FE; --done-st:#1A73E8; --done-t:#1C5BB5;
+  --node-bg:#F7F9FC;
+  --display:"DM Sans","Helvetica Neue",Arial,sans-serif;
+  --body:"DM Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:"DM Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0b1015;overflow:hidden}
+body{font-family:var(--body);color:var(--fg)}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;background:var(--bg);overflow:hidden;transform-origin:0 0}
+.abs{position:absolute}
+.lane{position:absolute;background:var(--surface);border:2px solid var(--line);border-radius:22px}
+.lane-h{position:absolute;left:24px;top:18px;font:500 20px var(--body);color:var(--muted);display:flex;align-items:center;gap:10px;white-space:nowrap}
+.lane-h b{color:var(--fg);font-weight:700}
+/* agent loop diagram */
+.node{position:absolute;border-radius:16px;background:var(--node-bg);border:2px solid transparent}
+#loopbox{position:absolute;border:2px dashed #BCC6D2;border-radius:24px}
+#loopLbl{position:absolute;font:600 17px var(--body);color:var(--muted);background:#fff;padding:0 10px;white-space:nowrap}
+.hookb{position:absolute;transform:translate(-50%,0);white-space:nowrap;text-align:center;line-height:1.35;font:600 13px var(--body);color:#1C5BB5;background:#EEF4FD;border:1.5px solid #7FA9E6;border-radius:8px;padding:4px 9px}
+.plbl{position:absolute;font:500 16px var(--body);color:var(--muted);white-space:nowrap;transform:translate(-50%,-50%);background:#fff;padding:0 8px;border-radius:6px}
+#promptN{display:flex;flex-direction:column;justify-content:center;padding:0 22px;gap:4px}
+#promptN .k{font:600 15px var(--body);color:var(--muted)}
+#promptN .p{font:500 15px var(--mono);color:var(--fg);white-space:nowrap}
+#evalN .h{position:absolute;left:22px;top:16px;font:700 34px var(--display)}
+#toolN .h{font:700 21px var(--body)}
+#decide{position:absolute;left:16px;right:16px;top:74px;bottom:16px;border-radius:12px;background:#fff;padding:16px 18px;font:500 15px var(--body);color:var(--muted);overflow:hidden}
+#decide b{display:block;font:600 25px var(--body);color:var(--fg);margin-top:10px;line-height:1.3}
+#toolN .sub{font:500 15px var(--body);color:var(--muted);margin-top:3px}
+.chip{position:absolute;height:46px;border-radius:10px;border:1.5px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font:600 17px var(--body);color:var(--muted)}
+.endN{display:flex;align-items:center;justify-content:center;font:600 19px var(--body)}
+#turncard{position:absolute;border-radius:14px;background:var(--soft);padding:12px 18px}
+#turncard .row{font:500 15px var(--mono);white-space:nowrap;display:flex;gap:10px;align-items:center;height:30px;overflow:hidden}
+#turncard .row .dir{width:18px;color:var(--muted);flex:none}
+.tag{display:inline-block;padding:3px 9px;border-radius:7px;font:600 14px var(--body)}
+/* context */
+.blk{position:absolute;border-radius:9px;border:1.5px solid;overflow:hidden}
+.blk .bt{position:absolute;left:12px;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px;white-space:nowrap;font:600 15px var(--body)}
+.blk.tall .bt{top:10px;transform:none}
+.blk .tn{font:600 11px var(--mono);padding:1px 5px;border-radius:5px;background:rgba(255,255,255,.7);flex:none}
+.blk .sub{font:400 12.5px var(--mono);opacity:.85;overflow:hidden;text-overflow:ellipsis}
+.blk .lines{position:absolute;left:12px;right:12px;top:38px;bottom:8px;overflow:hidden}
+.blk .lines i{display:block;height:6px;border-radius:3px;margin:0 0 8px;background:currentColor;opacity:.16}
+#ctxbar{position:absolute;width:10px;border-radius:5px;background:var(--soft);overflow:hidden}
+#ctxfill{position:absolute;left:0;right:0;top:0;background:var(--accent);border-radius:5px}
+/* files */
+.file{position:absolute;height:60px;border-radius:12px;border:1.5px solid var(--line);background:#fff;display:flex;align-items:center;gap:12px;padding:0 14px}
+.file .ic{width:32px;height:38px;border-radius:5px;font:600 9.5px var(--mono);display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;color:#fff;flex:none}
+.file .fn{font:500 15px var(--mono);white-space:nowrap}
+.file .fd{font:400 12.5px var(--body);color:var(--muted);margin-left:auto;white-space:nowrap}
+.doc{position:absolute;width:136px;height:132px;border-radius:12px;border:2px solid transparent;text-align:center}
+.doc svg{display:block;margin:8px auto 4px}
+.doc .fn{font:500 12px var(--mono);line-height:1.3;color:var(--fg);white-space:pre}
+.doc .fd{font:400 11px var(--body);color:var(--muted);margin-top:2px;white-space:nowrap}
+#empty{border:2px dashed var(--line);border-radius:14px;display:flex;align-items:center;justify-content:center;color:#9aa6b1;font:500 16px var(--body)}
+/* the three parts of Files on Disk: RiskMind (built in) · Plugins · Workspace */
+.sech{position:absolute;left:18px;font:700 16px var(--body);color:var(--fg);white-space:nowrap}
+.sech span{font-weight:500;color:var(--muted)}
+.sdiv{position:absolute;left:18px;right:18px;height:0;border-top:1.5px dashed #C9D8EE}
+.item{position:absolute;border-radius:12px;border:1.5px solid var(--line);background:#fff}
+.item.row{display:flex;align-items:center;gap:10px;padding:0 12px}
+.item.col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.item .in{font:600 15px var(--body);color:var(--fg);white-space:nowrap}
+.item.row .in{font-family:var(--mono);font-weight:500;font-size:14px}
+.item .is{font:400 12px var(--body);color:var(--muted);white-space:nowrap}
+#skilltree{position:absolute;border-radius:12px;border:1.5px solid var(--pur-st);background:#fff;overflow:hidden;padding:10px 12px}
+#skilltree .tr{display:flex;align-items:center;gap:8px;height:26px;white-space:nowrap}
+#skilltree .tr+.tr{margin-top:6px}
+#skilltree .sk{font:600 13px var(--mono);color:var(--pur-t)}
+.sc{display:inline-flex;align-items:center;height:26px;padding:0 7px;border-radius:7px;border:1.5px solid var(--line);font:500 12px var(--mono);color:var(--fg);background:#fff}
+.rn{font:700 22px var(--body);color:var(--fg)}
+.rs{font:500 14px var(--body);color:var(--muted);margin-top:2px}
+.lrow{font:500 20px var(--body);color:var(--fg);white-space:nowrap}.lrow span{color:var(--muted)}
+.lllm{margin-top:30px;padding-top:24px;border-top:1.5px solid var(--line)}.lfa{font-size:22px}
+.lrs{font:400 16px var(--body);color:var(--muted);margin-top:6px;white-space:nowrap}
+.mechs{display:flex;gap:10px}.mechs+.mechs{margin-top:10px}
+.mech{display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:9px;border:1.5px solid var(--line);background:#fff;font:600 14px var(--body);color:var(--fg);white-space:nowrap}
+.dbox{position:absolute;border-radius:16px;background:#F7FAFE;border:2px solid #A9C4EA;padding:16px 20px;overflow:hidden}
+.dllm{background:#EAF2FE;border:2.5px solid #1C5BB5;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0}
+.dc{display:flex;align-items:center;justify-content:center;gap:12px;height:100%;font:700 24px var(--body);color:var(--fg);white-space:nowrap}
+.dllm .dc{height:auto}
+.dhd{font:600 15px var(--body);color:var(--muted);letter-spacing:.02em}
+.dsub{font:500 16px var(--body);color:var(--muted);white-space:nowrap}
+.blab{font:500 15px var(--body);color:#9AA6B1;transform:translateX(-50%);white-space:nowrap}
+.augf{position:absolute;border:2px dashed #A9C4EA;border-radius:22px}
+.auglbl{font:700 17px var(--body);color:#1C5BB5;background:#fff;padding:0 10px;white-space:nowrap}
+.wfmore{font:700 40px var(--body);color:#7FA9E6;line-height:1;letter-spacing:4px}
+.wfsfx{font-weight:600}
+.ptsub{border:1.5px solid #C9D8EE;border-radius:12px;background:#fff;box-sizing:border-box}
+.ptsn{position:absolute;left:14px;top:9px;font:700 14px var(--body);color:var(--fg)}
+.ptsw{position:absolute;right:12px;top:9px;width:36px;height:20px;border-radius:10px;background:#1C5BB5;transition:none}
+.ptsw i{position:absolute;top:3px;left:19px;width:14px;height:14px;border-radius:50%;background:#fff}
+.ptsw.off{background:#C9D2DC}.ptsw.off i{left:3px}
+.ptmh{font:700 16px var(--body);color:var(--fg)}
+.ptrow{box-sizing:border-box;white-space:nowrap}.ptrow .wmini{gap:12px}.pta{color:var(--muted);font-size:12.5px}
+.ptdef{padding:0 12px;box-sizing:border-box}.ptdh{font:600 15px var(--body);height:34px;display:flex;align-items:center}
+.ptl{font:400 12.5px var(--mono);color:#4A5B70;height:20px;line-height:20px;white-space:nowrap}.ptl.ptdots{color:#7FA9E6;font:700 16px var(--body)}
+.dnote2{font:500 15px var(--body);color:var(--muted);white-space:nowrap}
+.duser{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;padding:0;background:#F7FAFE;border:2px solid #A9C4EA}
+.dcall{font:600 14px var(--body);color:#1C5BB5;min-height:18px}
+.dsn{font:500 13px var(--mono);color:var(--muted);margin-top:4px}
+.hdef{font:500 40px var(--display);line-height:1.35;color:var(--fg);text-align:center;letter-spacing:-.005em}
+.hdef b{font-weight:700}
+.hsrc{font:500 18px var(--body);color:var(--muted);margin-top:28px}
+.hloop{font:500 16px var(--body);color:#1C5BB5}.hloop b{font-weight:700}
+.hn{color:#1C5BB5}
+.hdef2{font:500 25px var(--body);line-height:1.42;color:var(--fg);white-space:normal;max-width:700px}
+.hdef2 b{color:#1C5BB5;font-weight:700}
+.hsrc2{font:500 16px var(--body);color:var(--muted);margin-top:10px}
+.mgrp{margin-top:22px}.mgt{font:700 15px var(--body);color:#1C5BB5;margin-bottom:8px;letter-spacing:.02em}
+.mgy{color:#8A6D12}.mgd{color:#98A3B0}   /* the SDK's half of a header: horizontal (yellow); the half after the dot stays blue (RiskMind / the plugin: vertical) */
+.ctp{border-radius:20px;background:#F7FAFE;border:2px solid #A9C4EA;overflow:hidden}
+.ctph{position:absolute;left:40px;top:32px;font:700 28px var(--body);color:var(--fg)}
+.ctcol{position:absolute}
+.ctsec{font:700 15px var(--body);color:#1C5BB5;letter-spacing:.02em;margin-bottom:14px}
+.ctr{display:flex;align-items:center;gap:16px;height:52px;margin-bottom:10px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:0 16px}
+.ctn{flex:none;width:72px;font:600 18px var(--mono);color:#1C5BB5}
+.ctd{font:500 17px var(--body);color:var(--fg);white-space:nowrap}
+.ctr.idle{background:transparent;border-style:dashed}.ctr.idle .ctn,.ctr.idle .ctd{color:#8E9BA6}
+.cttg{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:7px;background:#EEF4FD;color:#1C5BB5;font:600 13px var(--body)}
+.ctr.mcp .ctn{width:72px}
+.ctsec.ctslot{height:52px;margin:0 0 10px;display:flex;align-items:center}   /* takes one row's place: MCP lines up with Edit, its item with Write */
+.tbh{position:absolute;left:20px;top:16px;font:700 22px var(--body);color:var(--fg)}
+.tbs{position:absolute;left:20px;top:48px;font:500 14px var(--body);color:var(--muted)}
+.tchips{position:absolute;left:18px;right:18px;top:84px;display:flex;flex-wrap:wrap;gap:10px}
+.tchip{display:inline-flex;align-items:center;justify-content:center;width:60px;height:38px;border-radius:9px;border:1.5px solid var(--line);background:#fff;font:600 14px var(--body);color:var(--fg)}
+.ctxl{font:500 16px var(--body);color:var(--muted);line-height:1.45}.ctxl b{color:#1C5BB5;font-weight:700}
+.sessf{position:absolute;background:transparent;border:none;padding:0;display:flex;align-items:center;justify-content:center}
+.hgate{display:flex;align-items:center;gap:14px;transform:translate(-50%,-50%);white-space:nowrap}
+.hg{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:9px;border:1.5px dashed #B8C2CB;background:#fff;font:600 14px var(--body);color:var(--muted)}
+.hg.ok{border:1.5px solid #1C5BB5;color:#1C5BB5;background:#EAF2FE}.hg.ok::after{content:"✓";font-weight:700}
+.item .in.im{font:500 13px var(--mono)}
+.item .is{font-size:11.5px}
+.tchip.bi{width:auto;padding:0 12px;font-family:var(--mono);font-weight:500;font-size:13px}
+.hg.ask{border:1.5px solid #1C5BB5;color:#1C5BB5;background:#fff;box-shadow:0 0 0 4px rgba(28,91,181,.15)}
+.item.crow{gap:14px;padding:0 16px;overflow:hidden}
+.crow .cic{flex:none;width:32px;display:flex;justify-content:center}
+.crow .in.im{font:600 15px var(--mono);color:var(--fg)}
+.cc ~ .crow .in.im, .item.crow:not(.off) .in.im{color:#1C5BB5}.pcard .in.im{color:#1C5BB5}   /* what RiskMind / a plugin fills a slot with: blue, against the SDK's yellow */
+.crow .is{font:500 14px var(--body);color:var(--muted);margin-top:2px;white-space:nowrap}
+.crow.off .in.im{color:#9AA6B1}.crow.off .is{color:#B3BDC7}
+.ifr{border:1.5px solid #C9D8EE;border-radius:18px;background:#fff;z-index:-0}
+.mrow{display:flex;align-items:center;gap:12px;height:56px;margin-bottom:16px}
+.mrow .mech{flex:none;width:156px;justify-content:center}
+.marr{color:#98A3B0;font:600 16px var(--body)}
+.mslot{width:440px;height:56px;flex:none}
+.pwrap{display:flex;align-items:flex-start}.pchips{padding-top:11.5px}.pchips .mrow .mslot{width:0}
+.pbox{position:relative;border:1.5px dashed #7FA9E6;border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:16px;margin-left:4px}
+.pbl{position:absolute;right:14px;top:-10px;background:#fff;padding:0 6px;font:700 13px var(--body);color:#1C5BB5;letter-spacing:.02em}
+.pcard{display:flex;align-items:center;gap:14px;padding:0 16px;height:56px;width:420px;box-sizing:border-box;border-radius:12px;border:1.5px solid #7FA9E6;background:#F3F7FD}
+.pcard .is{font:500 13px var(--mono)!important}
+.wtbox{display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-sizing:border-box;border-radius:10px;border:1.5px solid #A9C4EA;background:#fff}
+.wtn{font:500 14px var(--mono);color:#1C5BB5}.wmini{display:flex;gap:18px}.wmini i{width:12px;height:12px;border-radius:50%;border:2px solid #7FA9E6;background:#fff}.wmini i.on{background:#1C5BB5;border-color:#1C5BB5}
+.pfly{border:1.5px dashed #7FA9E6;border-radius:16px;box-sizing:border-box}
+.erbc{font:700 22px var(--body);color:var(--fg);white-space:nowrap;display:flex;align-items:center;gap:12px}
+.etoday{font:600 14px var(--body);color:#1C5BB5;background:#EAF2FE;border:1.5px solid #7FA9E6;border-radius:8px;padding:3px 10px}
+.eli b{font-weight:600}.eli small{font:400 19px var(--body);color:var(--muted)}
+.esub{position:absolute;left:0;transform:translate(-50%,0);height:26px;width:300px;overflow:hidden}
+.esub span{position:absolute;left:0;right:0;text-align:center;font:500 20px var(--body);color:var(--muted);white-space:nowrap;line-height:26px}
+.eleg{display:flex;justify-content:center;transform:translate(-50%,0);white-space:nowrap}
+.eli{display:inline-flex;align-items:center;gap:12px;font:600 22px var(--body);color:var(--fg);overflow:hidden}   /* as Session 1's legend: swatch, name, a muted note on the same line */
+.eli i{width:34px;height:24px;border-radius:5px;border:2px solid;box-sizing:border-box;flex:none}
+.cc .mrow{height:48px;margin-bottom:8px}.cc .mslot{height:48px}
+.mechs .mnot{align-self:center;margin-left:4px}
+.mnot{font:500 14px var(--body);color:#9AA6B1}
+/* flying pill */
+.fly{position:absolute;left:0;top:0;padding:7px 14px;border-radius:999px;font:500 15px var(--mono);white-space:nowrap;border:1.5px solid;box-shadow:0 8px 20px -10px rgba(22,33,43,.4)}
+/* top band: progress (caption + step tracker) */
+#capwrap{left:60px;top:36px;width:1000px;height:140px}
+.capin{position:absolute;left:0;top:0;right:0;border-left:3px solid var(--accent);padding:4px 0 4px 20px}
+.capk{font:600 17px var(--body);color:var(--accent);white-space:nowrap}
+.capt{font:500 27px var(--body);color:var(--fg);margin-top:6px;white-space:nowrap;letter-spacing:-.005em}
+#tracker{left:570px;top:46px;width:780px;height:90px}
+.tnode{position:absolute;top:0;width:28px;height:28px;margin-left:-14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 12px var(--mono);border:2px dashed #b8c2cb;color:#8e9ba6;background:var(--bg)}
+.tlab{position:absolute;top:38px;width:80px;margin-left:-40px;text-align:center;font:600 12px var(--body);letter-spacing:.04em;color:#9aa6b1;white-space:nowrap}
+#trackLine,#trackFill{position:absolute;top:13px;height:2px;border-radius:2px}
+#trackLine{background:#D5DEE9}
+#trackFill{background:var(--done-st)}
+/* end frame */
+#chat,#art{position:absolute;background:#fff;border:2px solid var(--line);border-radius:22px;overflow:hidden}
+.endc{position:absolute;left:0;top:0;right:0;bottom:0}
+.pbar{position:relative;z-index:1;height:56px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 22px;gap:12px;font:600 17px var(--body);white-space:nowrap;background:#fff}
+.pbar .m{font:400 14px var(--mono);color:var(--muted)}
+.ubub{margin:18px 22px 0 auto;max-width:480px;background:var(--soft);border-radius:14px 14px 4px 14px;padding:12px 16px;font:500 14px var(--mono);line-height:1.45}
+.trow{display:flex;align-items:center;gap:10px;margin:0 22px;height:30px;font:500 13.5px var(--mono);color:var(--muted);border-bottom:1px dashed #e6eaee;white-space:nowrap}
+.trow .d{width:10px;height:10px;border-radius:3px;flex:none}
+.reply{margin:14px 22px 0;border-left:4px solid var(--done-st);background:var(--done-bg);border-radius:6px 14px 14px 6px;padding:12px 16px;font:400 15px var(--body);color:var(--done-t);line-height:1.45}
+.alink{margin-top:10px;display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--done-st);border-radius:10px;padding:6px 12px;font:600 14px var(--body);color:var(--done-t)}
+#doc{position:absolute;left:0;right:0;top:56px;bottom:0;overflow:hidden}
+#docin{position:absolute;left:50%;width:860px;margin-left:-430px;top:0;padding:28px 0 40px}
+.dsec h3{margin:0 0 10px;font:700 24px var(--display);color:#16243A}   /* the sample dashboard keeps its own black headings */
+.dsec p{margin:0 0 12px;font:400 16px var(--body);line-height:1.6;color:#2a3540}
+.dsec .src{display:inline-block;font:600 11.5px var(--mono);padding:3px 8px;border-radius:6px;margin:0 0 8px}
+.fcard{border:1px solid var(--line);border-radius:14px;padding:16px 18px 12px;margin:6px 0 34px}
+.fcard .ft{font:600 16px var(--body);line-height:1.35;margin-bottom:10px}
+/* live controls, as in Session 1 */
+#hud{position:fixed;left:14px;bottom:20px;font:12px ui-monospace,Menlo,monospace;color:#8fa0ae;opacity:.7}
+:fullscreen #hud{display:none}
+:fullscreen,:fullscreen *{cursor:none!important}
+:fullscreen #ctl,:fullscreen #ctl *{cursor:pointer!important}
+#ctl{position:fixed;right:12px;bottom:10px;display:flex;gap:6px;z-index:5}
+#ctl button{width:38px;height:38px;border:0;border-radius:9px;background:rgba(22,36,58,.45);color:#fff;cursor:pointer;display:grid;place-items:center;padding:0;opacity:.55;transition:opacity .15s}
+#ctl button:hover{opacity:1}
+:fullscreen #ctl button{background:rgba(255,255,255,.14)}
+#ctl svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+body.export #ctl,body.export #hud{display:none}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="hud"></div>
+<div id="ctl"><button id="bPlay" title="Play / pause (Space)"></button><button id="bFull" title="Full screen (F)"></button></div>
+<script>
+/* ============ The real run ============ */
+const UUID = "9e97706c-ec23-4cdb-bc75-cb2c7121c7a3";
+const U8 = UUID.slice(0,8)+"…";
+const CFG = {
+  prompt: "/fxo-stress-pnl 2026-08-11 2026-08-10 GLOBALFINANCIALCRISISABS",
+  reportTitle: "FXO Stress PnL — Global Financial Crisis Absolute, 2026-08-11 vs 2026-08-10",
+  closing: "The model decides each step. The order is defined by the skill."
+};
+/* files on disk, in the order they appear */
+const FILES = {
+  csv:     {name:"8 CSV files",               desc:"fetched by MCP",       ext:"CSV",  disp:"8 CSV files"},
+  md:      {name:"portfolio_analysis_….md",   desc:"analysis script",      ext:"MD",   disp:"portfolio_analysis\n_….md"},
+  ajson:   {name:"portfolio_analysis_….json", desc:"analysis script",      ext:"JSON", disp:"portfolio_analysis\n_….json"},
+  text:    {name:U8+"_text.json",            desc:"written by the LLM",   ext:"JSON", disp:U8+"\n_text.json"},
+  figures: {name:U8+"_figures.json",         desc:"figures script",       ext:"JSON", disp:U8+"\n_figures.json"},
+  html:    {name:U8+".html",                 desc:"render script",        ext:"HTML", disp:U8+".html"},
+  blocks:  {name:U8+".json",                 desc:"render script",        ext:"JSON", disp:U8+".json"}
+};
+/* ====================================== */
+
+const TURN_LEN = 10, START = 8;
+/* beats inside a tool turn (seconds from the turn start) — slow enough to read every pill */
+const TM={call0:2.0, call1:3.4, on:3.3, run0:3.5, run1:4.7, out:4.7, res0:5.0, res1:6.8, mem:7.2};
+const COL = {
+  pur:  {bg:"var(--pur-bg)",  st:"var(--pur-st)",  t:"var(--pur-t)",  hex:"#5B8FD9"},
+  teal: {bg:"var(--teal-bg)", st:"var(--teal-st)", t:"var(--teal-t)", hex:"#7FA9E6"},
+  llm:  {bg:"var(--llm-bg)",  st:"var(--llm-st)",  t:"var(--llm-t)",  hex:"#1A73E8"},
+  neu:  {bg:"var(--neu-bg)",  st:"var(--neu-st)",  t:"var(--neu-t)",  hex:"#98A3B0"},
+  base: {bg:"var(--base-bg)", st:"var(--base-st)", t:"var(--base-t)", hex:"#98A3B0"},
+  done: {bg:"var(--done-bg)", st:"var(--done-st)", t:"var(--done-t)", hex:"#1A73E8"},
+  acc:  {bg:"var(--accent-soft)", st:"var(--accent)", t:"var(--accent)", hex:"#1C5BB5"}
+};
+const TOOLCOL = {Skill:"pur", Bash:"teal", MCP:"teal", Read:"neu", Write:"llm", Edit:"neu"};   // Write = the LLM's own words, highlighted
+
+/* Context block sizes (px). Height shows how much text enters context. */
+const H = {base1:46, base2:40, base3:56, L:88, LL:100, M:54, T:30, R:50};
+
+/* Turn table: the real run.
+   out = files written · in = files the script reads from disk · back = what rides "tool result" to the LLM */
+const TURNS = [
+  {decide:"Load the fxo-stress-pnl skill", tool:"Skill", call:"fxo-stress-pnl", pill:"Skill · fxo-stress-pnl",
+   ret:"skill steps and rules", back:"SKILL.md",
+   blk:{label:"Skill steps and rules", sub:"fxo-stress-pnl", h:H.L, c:"pur"},
+   cap:"From the prompt, the agent picks the FX Option plugin's skill"},
+  {decide:"Fetch the data", tool:"MCP", call:"fetch data · 2026-08-11, 2026-08-10", pill:"MCP · fetch data",
+   ret:"8 file locations", back:"→ 8 CSV paths", out:["csv"],
+   blk:{label:"Data file locations", sub:"→ 8 CSV paths", h:H.T, c:"teal"},
+   cap:"MCP saves 8 CSV files. Only the locations come back."},
+  {decide:"Run the analysis", tool:"Bash", call:"portfolio_analysis.py --scenario GLOBALFINANCIALCRISISABS", pill:"Bash · portfolio_analysis.py",
+   ret:"locations of the .md and .json (from the log)", back:"→ .md + .json paths", in:["csv"], out:["md","ajson"],
+   blk:{label:"Analysis file locations", sub:"→ .md + .json", h:H.T, c:"teal"},
+   cap:"A script digests the data. Only the locations come back."},
+  {decide:"Read the analysis markdown", tool:"Read", call:"portfolio_analysis_2026-08-11_2026-08-10.md", pill:"Read · portfolio_analysis_….md",
+   ret:"full markdown content", read:"md",
+   blk:{label:"Analysis markdown", sub:"9 data checks passed · …", h:H.LL, c:"neu"},
+   cap:"The only data the agent reads"},
+  {decide:"Generate the UUID", tool:"Bash", call:"uuidgen | tr '[:upper:]' '[:lower:]'", pill:"Bash · uuidgen",
+   ret:UUID, back:U8,
+   blk:{label:"UUID", sub:UUID, h:H.T, c:"teal"},
+   cap:"A UUID names this run's files"},
+  {decide:"Write the commentary as text JSON", tool:"Write", call:U8+"_text.json",
+   ret:"file written", back:"file written", write:"commentary + figure titles", out:["text"],
+   blk:{label:"Commentary + figure titles", sub:"written by the LLM", h:H.M, c:"llm"},
+   cap:"The only part the LLM generates: commentary and figure titles"},
+  {decide:"Build the figures", tool:"Bash", call:"generate_portfolio_figures.py", pill:"Bash · generate_portfolio_figures.py",
+   ret:"location of the figures json", back:"→ "+U8+"_figures.json", in:["ajson","text"], out:["figures"],
+   blk:{label:"Figures location", sub:"→ _figures.json · not read", h:H.T, c:"teal"},
+   cap:"A script builds the charts. The agent never reads them."},
+  {decide:"Load render-html", tool:"Skill", call:"render-html", pill:"Skill · render-html",
+   ret:"render-html instructions", back:"SKILL.md",
+   blk:{label:"render-html instructions", sub:"render-html", h:H.M, c:"pur"},
+   cap:"A skill loads another skill, built into RiskMind"},
+  {decide:"Render", tool:"Bash", call:"render.py --title \"FXO Stress PnL — …\"", pill:"Bash · render.py",
+   ret:"locations of the .html and blocks .json", back:"→ .html + .json paths", in:["figures","text"], out:["html","blocks"],
+   blk:{label:"Dashboard locations", sub:"→ .html + .json", h:H.T, c:"teal"},
+   cap:"Commentary and figures become the dashboard"},
+  {decide:"Emit turn output", tool:"MCP", call:"emit_turn_output(kind=\"report_tab\")", pill:"MCP · emit_turn_output",
+   ret:"dashboard shown", back:"dashboard shown", show:"html",
+   blk:{label:"Dashboard shown", sub:"emit_turn_output", h:H.T, c:"teal"},
+   cap:"An internal MCP tool shows the dashboard in a tab"},
+  {decide:"Finish, no more tool calls", tool:null, final:true,
+   blk:{label:"Final reply", sub:"summary + dashboard", h:H.R, c:"done"},
+   cap:"No more tool calls. The run is done."}
+];
+TURNS.forEach((T,i)=>{T.n=i+1;T.t0=START+i*TURN_LEN;});
+const NT = TURNS.length;
+const END_T = TURNS[NT-1].t0 + 5.6;    // the final answer lands, then the stop (no still frames)
+const DURATION = END_T + 10;           // end frame scrolls through the dashboard
+const CHAPTERS = [0, ...TURNS.map(x=>x.t0), END_T];
+/* playback is faster than the run's own clock in the tool turns: the call / run / result loop is compressed and the
+   wait after the block lands is cut. RUN_IN / RUN_EX: knots (internal → played); outside the tool turns, 1:1. */
+const TURN_IN=[0,2.0,3.4,4.7,6.8,8.0,TURN_LEN], TURN_EX=[0,1.4,2.4,3.2,4.6,5.5,5.8];
+const RUN_IN=[0], RUN_EX=[0];
+TURNS.forEach(T=>{if(!T.tool)return;const e0=RUN_EX[RUN_EX.length-1]+(T.t0-RUN_IN[RUN_IN.length-1]);
+  TURN_IN.forEach((k,j)=>{RUN_IN.push(T.t0+k);RUN_EX.push(e0+TURN_EX[j]);});});
+const knot=(A,B,x)=>{if(x<=A[0])return x-A[0]+B[0];for(let i=1;i<A.length;i++)if(x<=A[i])return A[i]===A[i-1]?B[i]:lerp(B[i-1],B[i],(x-A[i-1])/(A[i]-A[i-1]));return x-A[A.length-1]+B[B.length-1];};
+const runInt=e=>knot(RUN_EX,RUN_IN,e), runExt=i=>knot(RUN_IN,RUN_EX,i);
+
+/* ---------- helpers ---------- */
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const lerp=(a,b,p)=>a+(b-a)*p;
+const eo=p=>1-Math.pow(1-p,3);
+const eio=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+const pr=(t,a,b,f=eo)=>f(clamp((t-a)/(b-a)));
+const S=document.getElementById("stage");
+function el(tag,cls,parent=S,html=""){const e=document.createElement(tag);if(cls)e.className=cls;e.innerHTML=html;parent.appendChild(e);return e;}
+function css(e,o){for(const k in o)e.style[k]=o[k];}
+const px=v=>v+"px";
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+/* point at fraction q along a polyline */
+function along(pts,q){
+  const segs=[];let tot=0;
+  for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);segs.push(d);tot+=d;}
+  let r=q*tot;
+  for(let i=0;i<segs.length;i++){if(r<=segs[i]||i===segs.length-1){const f=segs[i]?clamp(r/segs[i]):0;return[lerp(pts[i][0],pts[i+1][0],f),lerp(pts[i][1],pts[i+1][1],f)];}r-=segs[i];}
+  return pts[pts.length-1];
+}
+
+/* RiskMind's logo (as in Session 1), for the Agent lane's label: the agent here is RiskMind */
+const LOGO_RM='data:image/png;base64,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';
+const AGENT_LOGO=`<img src="${LOGO_RM}" width="38" height="38" alt="">`;
+
+/* ---------- layout ---------- */
+const LANE_T=150, LANE_B=1040, LANE_H=LANE_B-LANE_T;
+const LC={x:60,w:520}, LA={x:600,w:780}, LR={x:1400,w:460};   // Context (memory cloud) · Agent · Files
+
+/* lanes */
+function lane(L,html){const l=el("div","lane");css(l,{left:px(L.x),top:px(LANE_T),width:px(L.w),height:px(LANE_H)});el("div","lane-h",l,html);return l;}
+const laneC=lane(LC,"<b>Context</b> · The LLM's Memory");
+css(laneC,{background:"transparent",border:"none",boxShadow:"none"});
+css(laneC.querySelector(".lane-h"),{left:"50px",top:"50px"});
+/* a scalloped cloud that grows downward as memory fills.
+   Top and side bumps sit at fixed positions measured from the top, so growing only
+   stretches the lowest side bump (and adds a new one) — the outline never shimmers. */
+const CLOUD={x0:28,y0:26,x1:LC.w-28,R:64,minH:250};
+const hsh=k=>.5+.5*Math.sin(k*2.39+1.3);
+function cloudPath(y1){
+  const {x0,y0,x1,R}=CLOUD, P=[];
+  const corner=(cx,cy,a0)=>{for(const f of [.5,1])P.push([cx+R*Math.cos(a0+f*Math.PI/2),cy+R*Math.sin(a0+f*Math.PI/2)]);};
+  // top edge, left → right
+  for(let x=x0+R,k=0;x<x1-R-40;x+=86+26*hsh(k++))P.push([x,y0]);
+  P.push([x1-R,y0]); corner(x1-R,y0+R,-Math.PI/2);
+  // right edge, top → bottom (fixed stops from the top)
+  const side=[];for(let y=y0+R,k=0;;k++){y+=80+28*hsh(k+7);if(y>y1-R-.6*80)break;side.push(y);}
+  side.forEach(y=>P.push([x1,y])); P.push([x1,y1-R]); corner(x1-R,y1-R,0);
+  // bottom edge, right → left
+  for(let x=x1-R,k=0;x>x0+R+40;k++){x-=86+26*hsh(k+3);if(x>x0+R+40)P.push([x,y1]);}
+  P.push([x0+R,y1]); corner(x0+R,y1-R,Math.PI/2);
+  // left edge, bottom → top (same fixed stops, reversed)
+  side.slice().reverse().forEach(y=>P.push([x0,y])); P.push([x0,y0+R]); corner(x0+R,y0+R,Math.PI);
+  let d=`M${P[0][0].toFixed(1)},${P[0][1].toFixed(1)}`;
+  for(let i=0;i<P.length;i++){const A2=P[i],B=P[(i+1)%P.length],ch=Math.hypot(B[0]-A2[0],B[1]-A2[1]);
+    if(ch<1)continue; d+=` A${(ch*.62).toFixed(1)},${(ch*.62).toFixed(1)} 0 0 1 ${B[0].toFixed(1)},${B[1].toFixed(1)}`;}
+  return d+"Z";
+}
+const cloudSvg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+cloudSvg.setAttribute("width",LC.w);cloudSvg.setAttribute("height",LANE_H);
+css(cloudSvg,{position:"absolute",left:"0",top:"0",overflow:"visible"});
+cloudSvg.innerHTML=`<path fill="#F7FAFE" stroke="#A9C4EA" stroke-width="2"/>`;
+const cloudEl=cloudSvg.firstChild;
+laneC.insertBefore(cloudSvg,laneC.firstChild);
+const laneA=lane(LA,`${AGENT_LOGO}<b>The Agent</b> · An LLM Running in a Loop`);
+const laneR=lane(LR,"<b>Files on Disk</b>");
+css(laneR,{background:"transparent",border:"none",boxShadow:"none"});
+css(laneR.querySelector(".lane-h"),{left:"30px",top:"16px"});
+{ /* a folder: tab top-left, body below */
+  const W=LR.w,Hh=LANE_H,T=1,B=48,TR=228;
+  const fsvg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  fsvg.setAttribute("width",W);fsvg.setAttribute("height",Hh);
+  css(fsvg,{position:"absolute",left:"0",top:"0",overflow:"visible"});
+  fsvg.innerHTML=`<path d="M1 ${T+14} Q1 ${T} 15 ${T} L${TR-12} ${T} Q${TR} ${T} ${TR+6} ${T+9} L${TR+22} ${B} L${W-21} ${B} Q${W-1} ${B} ${W-1} ${B+20} L${W-1} ${Hh-21} Q${W-1} ${Hh-1} ${W-21} ${Hh-1} L21 ${Hh-1} Q1 ${Hh-1} 1 ${Hh-21} Z" fill="#F3F7FD" stroke="#A9C4EA" stroke-width="2"/>
+    <line x1="1" x2="${W-1}" y1="${B}" y2="${B}" stroke="#D5E2F4" stroke-width="1.5"/>`;
+  laneR.insertBefore(fsvg,laneR.firstChild);
+}
+
+/* ===== Agent lane: the loop, as drawn in the Claude Agent SDK docs =====
+   Your prompt → [ agentic loop: LLM ⇄ Tool call(s) ] → no tool calls → Final answer   */
+const G={
+  prompt:{x:70,y:62,w:640,h:66},
+  box:{x:20,y:176,w:740,h:560},
+  ev:{x:52,y:236,w:300,h:372},
+  tl:{x:482,y:236,w:250,h:372},
+  fin:{x:522,y:778,w:210,h:52},
+  card:{x:24,y:772,w:732,h:98}
+};
+const EVX=G.ev.x+G.ev.w/2, TLX=G.tl.x+G.tl.w/2, CALL_Y=G.ev.y+80, RES_Y=680;
+const P={
+  prompt:[[G.prompt.x+G.prompt.w/2,G.prompt.y+G.prompt.h],[G.prompt.x+G.prompt.w/2,204],[EVX,204],[EVX,G.ev.y]],
+  calls:[[G.ev.x+G.ev.w,CALL_Y],[G.tl.x,CALL_Y]],
+  result:[[TLX,G.tl.y+G.tl.h],[TLX,RES_Y],[EVX,RES_Y],[EVX,G.ev.y+G.ev.h]],
+  exit:[[84,G.ev.y+G.ev.h],[84,G.fin.y+G.fin.h/2],[G.fin.x,G.fin.y+G.fin.h/2]]
+};
+const loopbox=el("div","",laneA);loopbox.id="loopbox";css(loopbox,{left:px(G.box.x),top:px(G.box.y),width:px(G.box.w),height:px(G.box.h)});
+const loopLbl=el("div","",laneA,"Agent Loop");loopLbl.id="loopLbl";css(loopLbl,{left:px(G.box.x+G.box.w-180),top:px(G.box.y-10)});
+
+const NS="http://www.w3.org/2000/svg";
+const svg=document.createElementNS(NS,"svg");svg.setAttribute("width",LA.w);svg.setAttribute("height",LANE_H);
+css(svg,{position:"absolute",left:"0",top:"0",overflow:"visible",pointerEvents:"none"});laneA.appendChild(svg);
+const defs=document.createElementNS(NS,"defs");svg.appendChild(defs);
+const MK={...COL,grey:{hex:"#98A3B0"}};
+for(const k in MK){const m=document.createElementNS(NS,"marker");m.setAttribute("id","ah-"+k);m.setAttribute("viewBox","0 0 10 10");m.setAttribute("refX","8");m.setAttribute("refY","5");m.setAttribute("markerWidth","6");m.setAttribute("markerHeight","6");m.setAttribute("orient","auto-start-reverse");
+  const p=document.createElementNS(NS,"path");p.setAttribute("d","M1,1 L8,5 L1,9");p.setAttribute("fill","none");p.setAttribute("stroke",MK[k].hex);p.setAttribute("stroke-width","1.6");p.setAttribute("stroke-linecap","round");p.setAttribute("stroke-linejoin","round");m.appendChild(p);defs.appendChild(m);}
+/* stop each arrow a few px short of the box it points at */
+function shorten(pts,d=8){const a=pts[pts.length-2],b=pts[pts.length-1];const L=Math.hypot(b[0]-a[0],b[1]-a[1]);return[...pts.slice(0,-1),[b[0]-(b[0]-a[0])/L*d,b[1]-(b[1]-a[1])/L*d]];}
+const dOf=pts=>"M"+pts.map(p=>p.join(",")).join(" L");
+function mkPath(pts,color,w){const p=document.createElementNS(NS,"path");p.setAttribute("d",dOf(shorten(pts)));p.setAttribute("fill","none");p.setAttribute("stroke",MK[color].hex);p.setAttribute("stroke-width",w);p.setAttribute("stroke-linejoin","round");p.setAttribute("stroke-linecap","round");p.setAttribute("marker-end",`url(#ah-${color})`);svg.appendChild(p);return p;}
+const base={};const hot={};
+for(const k in P){base[k]=mkPath(P[k],"grey",2.4);hot[k]=mkPath(P[k],"acc",4);hot[k].style.opacity=0;}
+const lbl={calls:el("div","plbl",laneA,"Tool Calls"),result:el("div","plbl",laneA,"Tool Result"),exit:el("div","plbl",laneA,"No Tool Calls")};
+css(lbl.calls,{left:px((G.ev.x+G.ev.w+G.tl.x)/2),top:px(CALL_Y-22)});
+/* RiskMind's approval hook: on every Bash call, tagged under the call (no stop) */
+const hookB=el("div","hookb",laneA,"Approval Hook");css(hookB,{left:px((G.ev.x+G.ev.w+G.tl.x)/2),top:px(CALL_Y+24)});
+css(lbl.result,{left:px((EVX+TLX)/2),top:px(RES_Y)});
+css(lbl.exit,{left:px(300),top:px(G.fin.y+G.fin.h/2)});
+
+/* nodes */
+const promptN=el("div","node",laneA,`<div class="k">Your Prompt</div><div class="p">${esc(CFG.prompt)}</div>`);
+promptN.id="promptN";css(promptN,{left:px(G.prompt.x),top:px(G.prompt.y),width:px(G.prompt.w),height:px(G.prompt.h)});
+const schedTag=el("div","abs",laneA,"generated by the schedule");
+css(schedTag,{left:px(G.prompt.x+G.prompt.w-196),top:px(G.prompt.y-11),font:"600 12px var(--body)",color:"#1C5BB5",background:"#EEF4FD",padding:"2px 8px",borderRadius:"7px"});
+
+const evalN=el("div","node",laneA,`<div class="h">LLM</div><div id="decide"><span>Decides the next step</span><b id="decT"></b></div>`);
+evalN.id="evalN";css(evalN,{left:px(G.ev.x),top:px(G.ev.y),width:px(G.ev.w),height:px(G.ev.h)});
+const decT=document.getElementById("decT"),decideBox=document.getElementById("decide");
+
+const toolN=el("div","node",laneA,`<div style="padding:18px 18px 0"><div class="h">Tool Call(s)</div><div class="sub">Core Tools · MCP</div></div>`);
+toolN.id="toolN";css(toolN,{left:px(G.tl.x),top:px(G.tl.y),width:px(G.tl.w),height:px(G.tl.h)});
+const chips={};
+const CW=66,CG=10,CX0=18;
+/* the five Core Tools (as on the Harness page), then MCP on its own: its tools come from the plugin and the built-ins */
+[["Skill","Bash","Read"],["Edit","Write"],["MCP"]].forEach((row,r)=>row.forEach((n,i)=>{
+  const c=el("div","chip",toolN,n);const x=CX0+i*(CW+CG),y=r<2?92+r*58:240;css(c,{left:px(x),top:px(y),width:px(CW)});
+  chips[n]={el:c,cx:G.tl.x+x+CW/2,cy:G.tl.y+y+23};
+}));
+const unl=el("div","abs",toolN,"MCP Tools");css(unl,{left:px(CX0),top:"214px",font:"600 13px var(--body)",color:"var(--muted)"});
+const callTxt=el("div","abs",toolN,"");
+css(callTxt,{left:"16px",right:"16px",top:"300px",minHeight:"34px",padding:"6px 10px",borderRadius:"9px",background:"#fff",border:"1.5px solid",font:"500 12px var(--mono)",lineHeight:"1.4",overflowWrap:"anywhere"});
+const finN=el("div","node endN",laneA,"Final Answer");css(finN,{left:px(G.fin.x),top:px(G.fin.y),width:px(G.fin.w),height:px(G.fin.h)});
+
+/* this-turn card */
+const card=el("div","",laneA,`<div class="row" id="cr1"><span class="dir">→</span><span id="cr1t"></span></div>
+  <div class="row" id="cr2"><span class="dir">←</span><span id="cr2t"></span></div>
+  <div id="cr3" style="font:400 15px var(--body);color:var(--muted);line-height:1.4;padding-top:4px"></div>`);
+card.id="turncard";css(card,{left:px(G.card.x),top:px(G.card.y),width:px(G.card.w),height:px(G.card.h),padding:"18px 24px 16px"});
+const cr1=document.getElementById("cr1"),cr2=document.getElementById("cr2"),cr1t=document.getElementById("cr1t"),cr2t=document.getElementById("cr2t"),cr3=document.getElementById("cr3");
+
+/* ===== Context lane ===== */
+const STK={x:46,y:90,w:404}, STK_BOTTOM=LANE_H-44;
+const ctxbar=el("div","",laneC,'<div id="ctxfill"></div>');ctxbar.id="ctxbar";
+css(ctxbar,{left:px(STK.x+STK.w+14),top:px(STK.y),height:px(STK_BOTTOM-STK.y)});
+const ctxfill=document.getElementById("ctxfill");
+
+function mkBlock(b,tag){
+  const c=COL[b.c], tall=b.h>=46;
+  let inner=`<div class="bt">${tag?`<span class="tn">${tag}</span>`:""}<span>${b.label}</span><span class="sub">${esc(b.sub||"")}</span></div>`;
+  if(b.sched) inner=`<div class="bt"><span>${b.label}</span><span class="tag" style="background:#EEF4FD;color:#1C5BB5;font-size:11.5px;padding:1px 7px">generated by the schedule</span></div>
+     <div style="position:absolute;left:12px;top:31px;font:400 10px var(--mono);white-space:nowrap">${esc(CFG.prompt)}</div>`;
+  const e=el("div","blk"+(tall?" tall":""),laneC,inner+(b.h>=70?`<div class="lines">${"<i></i>".repeat(10)}</div>`:""));
+  css(e,{left:px(STK.x),width:px(STK.w),background:c.bg,borderColor:c.st,color:c.t});
+  return e;
+}
+const BASE=[
+  {label:"CLAUDE.md",sub:"system prompt",h:H.base1,c:"base",at:1.6},
+  {label:"Tool Definitions",sub:"Core Tools + MCP",h:H.base2,c:"base",at:2.2},
+  {label:"Skill names and descriptions",sub:"plugins + render-html",h:H.base2,c:"base",at:2.8},
+  {label:"Prompt",h:H.base3,c:"base",at:4.0,sched:true}
+];
+const blocks=[];
+BASE.forEach(b=>{const e=mkBlock(b,"");blocks.push({...b,e,t0:b.at,t1:b.at+.7});});
+TURNS.forEach(T=>{
+  const e=mkBlock(T.blk,"T"+T.n);
+  let g0=T.t0+TM.mem; if(T.write)g0=T.t0+2.6; if(T.final)g0=T.t0+4.4;
+  blocks.push({...T.blk,e,t0:g0,t1:g0+.8,turn:T.n});
+});
+const GAP=3;   /* (tightened when Tool Definitions joined the base blocks) */
+const TOTAL_H=blocks.reduce((s,b)=>s+b.h+GAP,0);
+function blockTop(i){let y=STK.y;for(let j=0;j<i;j++)y+=blocks[j].h+GAP;return y;}
+
+/* ===== Files lane: a folder of documents ===== */
+const INK="#3d4a56";
+const GLYPH={
+  CSV:`<rect x="14" y="30" width="32" height="27" rx="2" fill="none" stroke="${INK}" stroke-width="1.8"/><rect x="14" y="30" width="32" height="9" fill="${INK}" opacity=".18"/>
+       <path d="M14 39 H46 M14 48 H46 M24.7 30 V57 M35.3 30 V57" stroke="${INK}" stroke-width="1.4"/>`,
+  MD:`<rect x="12" y="33" width="36" height="22" rx="3" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M17 50 V38 L21.5 43.5 L26 38 V50 M37 38 V48 M33 45 L37 49.5 L41 45" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`,
+  JSON:`<text x="30" y="51" text-anchor="middle" style="font:600 19px 'DM Mono'" fill="${INK}">{ }</text>`,
+  HTML:`<text x="30" y="50" text-anchor="middle" style="font:600 15px 'DM Mono'" fill="${INK}">&lt;/&gt;</text>`
+};
+const docSvg=(ext,w=44)=>`<svg width="${w}" height="${w*76/60}" viewBox="0 0 60 76">
+  <path d="M5 2 H40 L56 18 V73 H5 Z" fill="#fff" stroke="#9aa6b1" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M40 2 V18 H56" fill="#eef1f4" stroke="#9aa6b1" stroke-width="2" stroke-linejoin="round"/>
+  ${GLYPH[ext]}<text x="30" y="67" text-anchor="middle" style="font:600 8.5px 'DM Sans';letter-spacing:.08em" fill="#8e9ba6">${ext}</text></svg>`;
+/* Files on Disk holds three parts, top to bottom:
+   RiskMind (built in, not a plugin) · Plugins (one per product; the agent picks one) · Workspace (what this run writes) */
+const FOLD=(w,h,c="#7FA9E6",bg="#EEF4FD")=>`<svg width="${w}" height="${h}" viewBox="0 0 40 32"><path d="M2 6 Q2 3 5 3 H14 L17.5 7 H35 Q38 7 38 10 V27 Q38 30 35 30 H5 Q2 30 2 27 Z" fill="${bg}" stroke="${c}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const subSvg=`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9AA6B1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2.5" width="8" height="6" rx="1.5"/><rect x="2.5" y="15.5" width="8" height="6" rx="1.5"/><rect x="13.5" y="15.5" width="8" height="6" rx="1.5"/><path d="M12 8.5v3.5M6.5 15.5V12h11v3.5"/></svg>`;
+const hookSvg=`<svg width="30" height="30" viewBox="0 0 24 24" fill="#EEF4FD" stroke="#7FA9E6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>`;
+const SEC={rm:64, rmI:94, d1:188, pl:204, plI:234, tree:338, d2:430, ws:446, wsI:476};
+const secH=(y,html)=>{const h=el("div","sech",laneR,html);css(h,{top:px(y)});return h;};
+const sdiv=y=>{const d=el("div","sdiv",laneR);css(d,{top:px(y)});return d;};
+const secs=[secH(SEC.rm,"RiskMind <span>· Built In</span>"),secH(SEC.pl,"Plugins <span>· One per Product</span>"),secH(SEC.ws,"Workspace <span>· Files This Run Creates</span>")];
+const divs=[sdiv(SEC.d1),sdiv(SEC.d2)];
+const IW=424, IX=18;
+function item(cls,x,y,w,h,html){const e=el("div","item "+cls,laneR,html);css(e,{left:px(x),top:px(y),width:px(w),height:px(h)});return {e,x,y,w,h};}
+const PW=(IW-2*12)/3, RMH=78;
+const PLUG_ICON=`<svg width="26" height="26" viewBox="0 0 24 24" fill="#EEF4FD" stroke="#7FA9E6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>`;
+/* RiskMind's built-ins, upright like the plugin cards: the system prompt, and the built-in skill and MCP */
+const RM_HTML={claude:`${docSvg("MD",22)}<div class="in im">CLAUDE.md</div><div class="is">system prompt</div>`,
+  rhtml:`${FOLD(30,24)}<div class="in im">render-html</div><div class="is">skill · report</div>`,
+  emit:`${PLUG_ICON}<div class="in im">emit_turn_output</div><div class="is">MCP · chat panel</div>`};
+const RM={
+  claude:item("col",IX,SEC.rmI,PW,RMH,RM_HTML.claude),
+  rhtml: item("col",IX+PW+12,SEC.rmI,PW,RMH,RM_HTML.rhtml),
+  emit:  item("col",IX+2*(PW+12),SEC.rmI,PW,RMH,RM_HTML.emit)
+};
+const PLUG=[["fxo","FX Option"],["muni","Muni"],["igc","IG Canada"]].map(([k,n],i)=>({k,...item("col",IX+i*(PW+12),SEC.plI,PW,92,`${FOLD(46,37)}<div class="in">${n}</div>`)}));
+const FXO=PLUG[0];
+/* the chosen plugin opens: its skill, the SKILL.md and the two scripts it runs */
+const tree=el("div","",laneR,`<div class="tr"><span class="sk">fxo-stress-pnl</span><span class="is" style="font:400 12px var(--body);color:var(--muted)">skill</span><span class="sc" id="scMd">SKILL.md</span></div>
+  <div class="tr"><span class="sc" id="scPa">portfolio_analysis.py</span><span class="sc" id="scGf">generate_portfolio_figures.py</span></div>`);
+tree.id="skilltree";css(tree,{left:px(IX),top:px(SEC.tree),width:px(IW)});
+const TREE_H=78;
+const treeLink=el("div","abs",laneR);css(treeLink,{left:px(FXO.x+FXO.w/2-1),top:px(FXO.y+FXO.h),width:"2px",background:"var(--pur-st)"});
+const SC={md:document.getElementById("scMd"),pa:document.getElementById("scPa"),gf:document.getElementById("scGf")};
+/* which file on disk each turn uses (lit while the tool runs) */
+const USES={1:["md","pur"],3:["pa","teal"],7:["gf","teal"],8:["rhtml","pur"],9:["rhtml","teal"],10:["emit","teal"]};
+
+const DOC={w:136,h:132,x0:IX,dx:144,y0:SEC.wsI,dy:138};
+const emptyBox=el("div","abs",laneR,"Empty · Filled During the Run");emptyBox.id="empty";
+css(emptyBox,{left:px(IX),top:px(SEC.wsI),width:px(IW),height:px(DOC.h)});
+const files={};
+Object.keys(FILES).forEach((k,i)=>{
+  const F=FILES[k], col=i===6?1:i%3, x=DOC.x0+col*DOC.dx, y=DOC.y0+Math.floor(i/3)*DOC.dy;
+  const f=el("div","doc",laneR,`${docSvg(F.ext)}<div class="fn">${esc(F.disp)}</div><div class="fd">${F.desc}</div>`);
+  css(f,{left:px(x),top:px(y)});
+  files[k]={e:f,slot:i,x,y,cx:x+DOC.w/2,cy:y+50};
+});
+const fileAt={};
+TURNS.forEach(T=>{(T.out||[]).forEach((k,i)=>fileAt[k]=T.t0+TM.out+i*.3);});
+const TOOL_PT=[TLX,G.tl.y+G.tl.h/2];
+const TOOL_R=[LA.x+TOOL_PT[0]-LR.x, TOOL_PT[1]];   // Tool call(s) centre in Files-lane coords
+const SHOW_T=TURNS.find(T=>T.show).t0+TM.out;
+const reportNote=el("div","abs",laneR,'<span class="tag" style="background:var(--done-bg);color:var(--done-t);border:1.5px solid var(--done-st);font-size:13px">Shown as the dashboard</span>');
+
+/* thought bubbles: the LLM ⇢ its memory (stage coords) */
+const EV_L=[LA.x+G.ev.x, LANE_T+G.ev.y+62];
+const BUBS=[[EV_L[0]-16,EV_L[1]-6,7],[EV_L[0]-44,EV_L[1]-22,11],[EV_L[0]-80,EV_L[1]-44,16]].map(([x,y,r])=>{
+  const b=el("div","abs");css(b,{left:px(x-r),top:px(y-r),width:px(2*r),height:px(2*r),borderRadius:"50%",background:"#F7FAFE",border:"2px solid #A9C4EA"});return b;});
+
+const A=(x,y)=>[LA.x+x,LANE_T+y];
+
+/* ===== bottom band: caption (left) + step tracker (right) ===== */
+const capwrap=el("div","abs");capwrap.id="capwrap";capwrap.style.display="none";   /* no caption over the run: the step tracker is enough */
+const capA=el("div","capin",capwrap,'<div class="capk"></div><div class="capt"></div>');
+const capB=el("div","capin",capwrap,'<div class="capk"></div><div class="capt"></div>');
+const tracker=el("div","abs");tracker.id="tracker";
+const STEPS=[{lab:"Prompt"},...TURNS.map(T=>({lab:T.tool||"Answer",c:T.tool?TOOLCOL[T.tool]:"done"}))];
+const TSP=(780-60)/(STEPS.length-1), TX=i=>30+i*TSP;
+const trackLine=el("div","",tracker);trackLine.id="trackLine";css(trackLine,{left:px(TX(0)),width:px(TX(STEPS.length-1)-TX(0))});
+const trackFill=el("div","",tracker);trackFill.id="trackFill";css(trackFill,{left:px(TX(0))});
+const tnodes=STEPS.map((s,i)=>{const n=el("div","tnode",tracker,i?String(i):"S");css(n,{left:px(TX(i))});return n;});
+const tlabs=STEPS.map((s,i)=>{const l=el("div","tlab",tracker,s.lab);css(l,{left:px(TX(i))});return l;});
+
+/* ===== end frame: chat + the real dashboard, section by section ===== */
+const chat=el("div","",S);chat.id="chat";
+const art=el("div","",S);art.id="art";
+const chatC=el("div","endc",chat,`
+  <div class="pbar">RiskMind <span class="m">chat</span></div>
+  <div class="ubub">${esc(CFG.prompt)}<div style="margin-top:8px"><span class="tag" style="background:#EEF4FD;color:#1C5BB5;font-size:12px">generated by the schedule</span></div></div>
+  <div style="height:12px"></div>
+  ${TURNS.filter(T=>T.tool).map(T=>`<div class="trow"><span class="d" style="background:${COL[TOOLCOL[T.tool]].hex}"></span><b style="color:var(--fg);font-weight:600">${T.tool}</b><span style="overflow:hidden;text-overflow:ellipsis">${esc(T.call)}</span></div>`).join("")}
+  <div class="reply"><b>FXO Stress PnL dashboard is ready.</b><br>Global Financial Crisis Absolute: $12.8MM stress profit, up $0.5MM. One flag: BAU and Murex differ by $26.0MM on Rising Rates Risk Off.
+    <div class="alink">↗ Open the dashboard</div></div>`);
+function hbar(d,{zx,sc,w=820,label=v=>(v>0?"+":"−")+"$"+Math.abs(v).toFixed(1)+"MM"}){
+  const rh=38,hgt=d.length*rh+10;
+  return `<svg width="${w}" height="${hgt}" viewBox="0 0 ${w} ${hgt}"><line x1="${zx}" x2="${zx}" y1="2" y2="${hgt-2}" stroke="#D5DEE9"/>${d.map(([p,v],i)=>{const y=6+i*rh,bw=Math.abs(v)*sc,x=v>=0?zx:zx-bw;
+    return `<text x="4" y="${y+20}" style="font:500 14px 'DM Mono'" fill="#3d4a56">${p}</text><rect x="${x}" y="${y+5}" width="${bw}" height="22" rx="3" fill="${v>=0?"#1C5BB5":"#98A3B0"}"/><text x="${v>=0?x+bw+8:x-8}" y="${y+21}" text-anchor="${v>=0?"start":"end"}" style="font:600 13px 'DM Sans'" fill="#16212b">${label(v)}</text>`;}).join("")}</svg>`;
+}
+const totalChart=(()=>{const v=[12.3,12.8],lb=["2026-08-10","2026-08-11"];
+  return `<svg width="820" height="170" viewBox="0 0 820 170"><line x1="40" x2="780" y1="138" y2="138" stroke="#D5DEE9"/>${v.map((x,i)=>{const h=x*8,X=260+i*220;return `<rect x="${X}" y="${138-h}" width="100" height="${h}" rx="4" fill="${i?"#1C5BB5":"#A9C4EA"}"/><text x="${X+50}" y="${130-h}" text-anchor="middle" style="font:600 15px 'DM Sans'" fill="#16212b">$${x}MM</text><text x="${X+50}" y="160" text-anchor="middle" style="font:400 13px 'DM Mono'" fill="#5b6a78">${lb[i]}</text>`;}).join("")}</svg>`;})();
+const estChart=hbar([["USD/CAD",333.0],["EUR/USD",-120.8],["GBP/USD",-60.4],["CAD/MXN",-46.1]],{zx:330,sc:1.2});
+const changeChart=hbar([["USD/MXN",20.2],["CAD/MXN",19.9],["GBP/USD",8.2],["AUD/USD",-10.7],["EUR/CNH",-11.9],["EUR/USD",-23.1]],{zx:420,sc:12});
+const SRC_T=`<span class="src" style="background:var(--neu-bg);color:var(--fg);border:1px solid #c3ccd4">${U8}_text.json · written by the LLM</span>`;
+const SRC_F=`<span class="src" style="background:var(--teal-bg);color:var(--teal-t)">${U8}_figures.json · built by a script</span>`;
+const artC=el("div","endc",art,`
+  <div class="pbar"><span style="overflow:hidden;text-overflow:ellipsis">${esc(CFG.reportTitle)}</span><span style="margin-left:auto;background:var(--done-bg);color:var(--done-t);border:1.5px solid var(--done-st)" class="tag">Dashboard</span></div>
+  <div id="doc"><div id="docin">
+    <div class="dsec"><h3>Summary</h3>${SRC_T}
+      <p>The highlight scenario is Global Financial Crisis Absolute, the scenario requested for this review. The FXO book reports a BAU stress profit of $12.8MM on 2026-08-11 against $12.3MM on 2026-08-10, a stress profit increase of $0.5MM over the period — a small move on a scenario that is close to flat for the desk relative to the other two. For context, Global Pandemic remains the severe scenario at a stress loss of $159.3MM, and Rising Rates Risk Off a stress profit of $24.4MM.</p>
+      <p>One reconciliation flag needs attention: BAU and Murex differ by $26.0MM for Rising Rates Risk Off, beyond the $20MM threshold. Past that point the two systems disagree about the same positions, so this is a data error signal rather than a risk move.</p>
+      ${SRC_F}<div class="fcard"><div class="ft">Global Financial Crisis Absolute: $12.8MM stress profit, a $0.5MM increase over the period</div>${totalChart}</div></div>
+    <div class="dsec"><h3>Stress PnL Estimation by Currency Pair</h3>${SRC_T}
+      <p>Under Global Financial Crisis Absolute the grid estimate totals $137.1MM across 77 currency pairs against $126.8MM of BAU over the same pairs, a residual of −$10.2MM, and USD/CAD alone carries −$27.0MM of that residual — the pair where the estimate is least reliable.</p>
+      <p>USD/CAD dominates the book, estimating to a stress profit of $333.0MM, and it is almost entirely a spot story. The largest stress loss is EUR/USD at −$120.8MM, again spot-led. Behind them GBP/USD estimates to a stress loss of −$60.4MM, and CAD/MXN to −$46.1MM.</p>
+      ${SRC_F}<div class="fcard"><div class="ft">Stress PnL estimate by currency pair</div>${estChart}</div></div>
+    <div class="dsec"><h3>Stress PnL Change by Currency Pair</h3>${SRC_T}
+      <p>The estimated stress PnL for the book moved +$3.8MM between 2026-08-10 and 2026-08-11, a stress profit increase, and that small net figure sits on top of much larger offsetting pair moves. USD/MXN added $20.2MM, CAD/MXN added $19.9MM and GBP/USD added $8.2MM.</p>
+      <p>Against the total, EUR/USD moved −$23.1MM, deepening its stress loss from −$97.7MM to −$120.8MM — the largest single move in the book. EUR/CNH gave back −$11.9MM and AUD/USD moved −$10.7MM.</p>
+      ${SRC_F}<div class="fcard"><div class="ft">Book estimate up $3.8MM, led by USD/MXN (+$20.2MM) and CAD/MXN (+$19.9MM)</div>${changeChart}</div></div>
+  </div></div>`);
+const docin=document.getElementById("docin"),doc=document.getElementById("doc");
+
+/* ===== Scene 1 · the four layers, grown from the inside out: LLM → Agent Harness → RiskMind Customization → Plugin.
+   Then the layers open into the run: CLAUDE.md, render-html and the plugins fly to Files on Disk, "LLM" to the LLM node. ===== */
+/* LLM's detail sits between its stop and the Harness: the ball shrinks to a dot on the progress bar at z0,
+   stop s1 (the text reaches the user), the detail leaves at back;
+   the dot reaches the next station at mv1 and grows back into the ball at the centre (done at end) */
+/* Every layer runs the same way: (rise from the bar into the ball) → its ring grows → its intro reaches out to the right
+   → stop → the intro draws back → the ball shrinks into the bar's dot → the layer's detail, or the dot walks on to the next station */
+const LDUR=[2.8,4.6,6.1,4.6];                 // ring + intro, up to the stop
+const RET=.6, SHR=.8, WALK=.8, RISE=.8;       // intro draws back · ball shrinks into the dot · dot walks on · dot rises into the ball
+const LS=[0.2], LSTOP=[], RT=[], WK=[];       // ring starts · stops · retract starts · walk starts
+LSTOP[0]=LS[0]+LDUR[0]; RT[0]=LSTOP[0]+.1;
+const DL0=RT[0]+RET;                          // the ball is a dot: the LLM's detail (Augmented LLM) begins
+const DL={z0:DL0, sA:DL0+4.3};   /* sA: the LLM alone; s1: the Augmented LLM's turn */
+DL.b0=DL.sA+.1; DL.bS=DL.b0+2.5;   /* b0: B begins; bS: built with two MCP servers, the context full of their definitions */
+DL.pt=DL.b0; DL.off=DL.bS+.2; DL.run=DL.off+1.3; DL.tA=DL.run+5.6; DL.tB=DL.tA;   /* off: the user switches Muni off; run: the one turn */   /* after the switch-off, the turn runs again in full */   /* pt…tB: Process as Tool */
+DL.back=DL.tB+.1; DL.mv1=DL.back+1.0; DL.end=DL.mv1+RISE;
+LS[1]=DL.end+.1;
+const HD={}, AN={};   /* AN: after the Harness intro, the computer analogy on a screen of its own (stop AN.s) */                                 /* the Agent Harness detail: definition stop s0, loop stop s1 */
+for(let i=1;i<3;i++){LSTOP[i]=LS[i]+LDUR[i];RT[i]=LSTOP[i]+.1;WK[i]=RT[i]+RET+SHR;
+  if(i===1){AN.in=RT[1]+RET+SHR-.15;AN.s=AN.in+2.4;   /* the analogy builds once the ball has gone into the bar */AN.o=AN.s+.1;HD.z0=AN.o+.6;   /* the detail comes in under the pieces that carry over */HD.s0=HD.z0+.3;HD.GD=1.5;HD.sG=HD.s0+1.4+1.2+2*2.2+1.4;HD.s1=HD.s0+1.4+1.2+2*2.2+HD.GD+1.1+1.6+.8+.8;   /* sG: Hooks → Permissions on the Edit call */
+    HD.back=HD.s1+.1;WK[1]=HD.back+.3;}   /* s0: the loop picture starts (no stop) */
+  if(i===2){LS[3]=RT[2]+RET+.1;break;}   /* no Customization detail: its intro draws back and the Plugin ring grows */
+  LS[i+1]=WK[i]+WALK+RISE+.1;}
+LSTOP[3]=LS[3]+LDUR[3];RT[3]=LSTOP[3]+.1;
+const AP={};   /* before the run: the analogy again, now with RiskMind on top as the application (stop AP.s); the run opens from it at AP.o */
+AP.in=RT[3]+RET+SHR-.15;AP.s=AP.in+2.6;AP.o=AP.s+.1;
+const CI=LS[2]+3.8;   /* Customization intro: Platform Services follow Harness Integration (no stop between) */
+const BAR={y:1000, x:[510,810,1110,1410], dot:9};   // the progress bar along the bottom: one station per layer
+const STATIONS=["Augmented LLM","Agent Harness","RiskMind Customization","Business Plugin"];
+const TR0=AP.o, INTRO=TR0+2;              // the layers open into the run at TR0; the run's clock starts at INTRO
+const LY={cx:600, cy:480, R:[110,220,320,410]};   // the ball: one ring per layer
+const ROWX=1190, ROWW=670, IFP=28;   /* IFP: padding inside the frame around each layer's intro */
+const LAYERS=[
+  {name:"Augmented LLM", sub:"", ly:480, k:"Augmented LLM", cap:"An LLM with tools: the building block"},
+  {name:"Agent Harness", sub:"Claude Agent SDK", ly:315, k:"Agent Harness", cap:"Everything around the LLM that turns it into an agent"},
+  {name:"RiskMind Customization", sub:"", ly:222, k:"RiskMind Customization", cap:"What RiskMind adds to the harness"},
+  {name:"Business Plugin", sub:"", ly:115, k:"Business Plugin", cap:"Business knowledge, one plugin per product"}
+];
+const ringWrap=el("div","abs",S);css(ringWrap,{left:"0",top:"0",width:"1920px",height:"1080px",transformOrigin:"0 0"});
+const ringSvg=document.createElementNS(NS,"svg");ringSvg.setAttribute("width",1920);ringSvg.setAttribute("height",1080);
+css(ringSvg,{position:"absolute",left:"0",top:"0",overflow:"visible",pointerEvents:"none"});ringWrap.appendChild(ringSvg);
+const rings=LAYERS.map(()=>{const p=document.createElementNS(NS,"path");p.setAttribute("stroke-width","2");p.setAttribute("fill-rule","evenodd");p.setAttribute("stroke-linejoin","round");ringSvg.appendChild(p);return p;});
+const iFrames=LAYERS.map(()=>el("div","abs ifr",S));
+const lDots=LAYERS.map(()=>{const c=document.createElementNS(NS,"circle");c.setAttribute("r","5");c.setAttribute("fill","#1C5BB5");ringSvg.appendChild(c);return c;});
+const leaders=LAYERS.map(()=>{const l=document.createElementNS(NS,"line");l.setAttribute("stroke","#A9C4EA");l.setAttribute("stroke-width","1.5");l.setAttribute("stroke-dasharray","5 5");ringSvg.appendChild(l);return l;});
+const circ=r=>`M${LY.cx-r},${LY.cy} a${r},${r} 0 1 0 ${2*r},0 a${r},${r} 0 1 0 ${-2*r},0 Z`;
+const ringD=(r0,r1)=>r0<=0?circ(r1):circ(r1)+" "+circ(r0);          // a ring = outer circle minus inner (evenodd)
+const rlab=LAYERS.map((L,i)=>{const e=el("div","abs",ringWrap,`<div class="rn">${L.name}</div>${L.sub?`<div class="rs">${L.sub}</div>`:""}`);
+  css(e,{textAlign:"center",whiteSpace:"nowrap"});return e;});
+/* the rows on the right, one per layer, level with its label */
+function row(html,y){const e=el("div","abs",S,html);css(e,{left:px(ROWX),width:px(ROWW)});return e;}
+const rowLLM=row(`<div class="hdef2">The basic building block of agentic systems is an LLM <b>enhanced with augmentations</b> such as retrieval, tools, and memory.<div class="hsrc2">Anthropic · Building Effective Agents</div></div><div class="lllm"><div class="lrow"><b>Claude Sonnet</b></div><div class="lrs">Model API, connected through Lumina Gateway</div></div>`);
+/* the Harness intro: Anthropic's definition, then its mechanisms in three groups */
+/* two kinds of harness mechanism: ready to use as the SDK ships them, and mechanism only (RiskMind and the plugins fill them) */
+const MREADY=["Agent Loop","Core Tools","Memory","Context Management","Permissions"];
+const MONLY=["System Prompt","Hooks","Skill Loading","MCP Client","Subagents"];
+const MGROUPS=[["Ready to Use",MREADY],["Claude Agent SDK Provides the Mechanism",MONLY]];
+const rowH=row(`<div class="hdef2">An agent harness (or scaffold) is the system that enables a model to <b>act as an agent</b>: it processes inputs, orchestrates tool calls, and returns results.<div class="hsrc2">Anthropic · Demystifying Evals for AI Agents</div></div>`
+  +MGROUPS.map(([g,ms])=>`<div class="mgrp"><div class="mgt">${g}</div><div class="mechs">${ms.map(m=>`<span class="mech">${m}</span>`).join("")}</div></div>`).join(""));
+const hdef2=rowH.querySelector(".hdef2"), mgrps=[...rowH.querySelectorAll(".mgrp")];
+rowLLM.style.width="700px";rowH.style.width="700px";   /* their real widths, for centring each stage */
+const mechs=[...rowH.querySelectorAll(".mech")];
+/* Customization and Plugin rows: the same cards as in Files on Disk, so they can fly there */
+const ICARD=(cls,w,h,html)=>{const e=el("div","item "+cls,S,html);css(e,{width:px(w),height:px(h)});return e;};
+/* Customization intro: the same definition; Ready to Use steps back; each Mechanism Only slot shows what RiskMind fills it with */
+const CRW=440, CRH=48, CRG=8;
+const SLOT_OF=["claude","hook","rhtml","emit","sub"];
+const PSV=["Workspace","MCP Gateway","Customized Interface","Scheduled Service"], PLM=["Evaluation","Monitoring","Version Control","Shared Library"];
+const rowC=row(`<div class="hdef2">What RiskMind customizes, <b>once for every business plugin</b>.</div>
+  <div class="mgrp"><div class="mgt" style="margin-bottom:12px"><span class="mgy">Claude Agent SDK Provides the Mechanism</span><span class="mgd"> · </span>Filled by RiskMind</div>${MONLY.map((m,j)=>`<div class="mrow"><span class="mech">${m}</span><span class="marr">→</span>${SLOT_OF[j]?`<div class="mslot"></div>`:`<span class="mnot">Not used</span>`}</div>`).join("")}</div>
+  <div class="mgrp"><div class="mgt">Platform Services</div><div class="mechs">${PSV.map(m=>`<span class="mech">${m}</span>`).join("")}</div>
+  </div><div class="mgrp"><div class="mgt">Plugin Lifecycle Management</div><div class="mechs">${PLM.map(m=>`<span class="mech">${m}</span>`).join("")}</div>
+  <div class="mechs"><span class="mech soon">AutoSkill · AutoEvolution</span></div></div>`);
+rowC.classList.add("cc");
+rowC.style.width="700px";
+const cSlots=[...rowC.querySelectorAll(".mslot")], cRows=[...rowC.querySelectorAll(".mrow")], cGroups=[...rowC.querySelectorAll(".mgrp")];
+const crow=(icon,name,line)=>`<div class="cic">${icon}</div><div class="cbody"><div class="in im">${name}</div><div class="is">${line}</div></div>`;
+const cust=[
+  {e:ICARD("row crow",CRW,CRH,crow(docSvg("MD",26),"CLAUDE.md","RiskMind's system prompt")),to:RM.claude},
+  {e:ICARD("row crow",CRW,CRH,crow(hookSvg,"Bash approval","Asks the user before every Bash call")),to:null},
+  {e:ICARD("row crow",CRW,CRH,crow(FOLD(30,24),"render-html","Built-in skill for building the HTML report")),to:RM.rhtml},
+  {e:ICARD("row crow",CRW,CRH,crow(PLUG_ICON,"emit_turn_output","Built-in MCP for showing the report in the chat panel")),to:RM.emit},
+  {e:ICARD("row crow off",CRW,CRH,crow(subSvg,"Data Analyzer · Data Visualization","Not rolled out in the PoC")),to:null,off:true}
+];
+const custGrp=el("div","abs",S,"");   /* (no group caption any more) */
+const custSum=el("div","abs hdef2",S,"The Claude Agent SDK provides the mechanisms; RiskMind sets them once, for every plugin.");css(custSum,{width:px(CRW)});
+/* Plugin intro: Anthropic's definition, then the same Mechanism Only slots, filled by one plugin (one unit) */
+const agSvg=subSvg.replaceAll("#9AA6B1","#7FA9E6").replace('fill="none"','fill="#EEF4FD"');
+const PCOMP=[["Hooks",hookSvg,"Hooks","hooks/hooks.json"],["Skill Loading",docSvg("MD",26),"Skills","skills/&lt;name&gt;/SKILL.md"],
+  ["MCP Client",PLUG_ICON,"MCP Servers",".mcp.json"],["Subagents",agSvg,"Agents","agents/&lt;name&gt;.md"]];
+const rowP=row(`<div class="hdef2">A plugin is a directory of hooks, skills, MCP servers, and subagents that the Claude Agent SDK <b>loads as one unit</b>.<div class="hsrc2">Anthropic · Claude Agent SDK Docs</div></div>
+  <div class="mgrp"><div class="mgt" style="margin-bottom:18px"><span class="mgy">Claude Agent SDK Provides the Mechanism</span><span class="mgd"> · </span>Filled by a Plugin</div><div class="pwrap">
+  <div class="pchips">${PCOMP.map(([m])=>`<div class="mrow"><span class="mech">${m}</span><span class="marr">→</span><span class="mslot"></span></div>`).join("")}</div>
+  <div class="pbox"><span class="pbl">One Plugin</span>${PCOMP.map(([,ic,n,f])=>`<div class="pcard crow"><div class="cic">${ic}</div><div class="cbody"><div class="in im">${n}</div><div class="is">${f}</div></div></div>`).join("")}</div></div></div>`);
+rowP.style.width="700px";
+const pDef=rowP.querySelector(".hdef2"), pHead=rowP.querySelector(".mgt"), pRows=[...rowP.querySelectorAll(".pchips .mrow")], pCards=[...rowP.querySelectorAll(".pcard")],
+  pBox=rowP.querySelector(".pbox"), pBl=rowP.querySelector(".pbl");
+const pFly=el("div","abs pfly",S);   /* the plugin box, flying to Files on Disk as the run opens */
+const plugs=PLUG.map((P,i)=>({e:ICARD("col",P.w,P.h,P.e.innerHTML),to:P}));
+/* the progress bar; the ball becomes its dot */
+const bar=el("div","abs",S);css(bar,{left:"0",top:"0",width:"1920px",height:"1080px",pointerEvents:"none"});
+const barSvg=document.createElementNS(NS,"svg");barSvg.setAttribute("width",1920);barSvg.setAttribute("height",1080);
+css(barSvg,{position:"absolute",left:"0",top:"0",overflow:"visible"});bar.appendChild(barSvg);
+barSvg.innerHTML=`<line x1="${BAR.x[0]}" x2="${BAR.x[3]}" y1="${BAR.y}" y2="${BAR.y}" stroke="#D5DEE9" stroke-width="2" stroke-linecap="round"/>
+  <line id="barFill" x1="${BAR.x[0]}" y1="${BAR.y}" y2="${BAR.y}" stroke="#1C5BB5" stroke-width="2.5" stroke-linecap="round"/>
+  ${BAR.x.map((x,i)=>`<circle class="bst" cx="${x}" cy="${BAR.y}" r="6" stroke-width="2"/>`).join("")}
+  <circle id="barDot" cx="0" cy="${BAR.y}" r="${BAR.dot}" fill="#1C5BB5"/>`;
+const barFill=barSvg.querySelector("#barFill"), barDot=barSvg.querySelector("#barDot"), bst=[...barSvg.querySelectorAll(".bst")];
+const blab=STATIONS.map((nm,i)=>{const e=el("div","abs blab",bar,nm);css(e,{left:px(BAR.x[i]),top:px(BAR.y+18)});return e;});
+const llmFly=el("div","abs",ringWrap,`<div class="lfa">Augmented</div>LLM`);css(llmFly,{font:"700 22px var(--body)",color:"var(--fg)",whiteSpace:"nowrap",textAlign:"center",lineHeight:"1.3"});
+const llmFlyA=llmFly.firstChild;
+
+/* ===== The computer analogy, beside the Harness card after its stop: Agent = Application, Agent Harness = OS,
+   Model = CPU, Context Window = RAM. Drawn at 1920×1080 with a light pencil feel, a screen of its own after the Harness card.
+   The harness is a fan in two tiers on the same floor as the model and its memory: the upper tier is what it provides
+   ready to use (blue, as on the card), the step in front the mechanisms it leaves to be filled (grey). ===== */
+const AN_K=1, AN_Y=465;   /* the diagram's scale and middle on screen, above the progress bar */
+const AP_K=.86, AP_CY=560;   /* the second time, with RiskMind on top: smaller, and its middle (in the drawing) higher */
+const AN_BOX={x0:108,x1:1812,cx:960,cy:736};      /* the drawing's extent and middle, in its own 1920×1080 */
+const ana=el("div","abs",S);css(ana,{left:"0",top:"0",width:"1920px",height:"1080px",transformOrigin:"0 0",pointerEvents:"none"});
+const anParts=(()=>{
+  const svg=document.createElementNS(NS,"svg");svg.setAttribute("width",1920);svg.setAttribute("height",1080);
+  css(svg,{position:"absolute",left:"0",top:"0",overflow:"visible"});ana.appendChild(svg);
+  const B="#1C5BB5", LB="#A9C4EA", TOP="#F4F8FE", FG="#16243A", MU="#66778C";
+  const mk=(tag,at,par)=>{const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);par.appendChild(e);return e;};
+  /* pencil feel: strokes wobble a little, side faces are hatched */
+  const defs=mk("defs",{},svg);
+  const f=mk("filter",{id:"an-rough",x:"-5%",y:"-5%",width:"110%",height:"110%"},defs);
+  mk("feTurbulence",{type:"fractalNoise",baseFrequency:".018",numOctaves:"2",seed:"4",result:"n"},f);
+  mk("feDisplacementMap",{in:"SourceGraphic",in2:"n",scale:"3.5"},f);
+  const hatch=(id,col,gap)=>{const p=mk("pattern",{id,width:gap,height:gap,patternUnits:"userSpaceOnUse",patternTransform:"rotate(-38)"},defs);
+    mk("rect",{width:gap,height:gap,fill:col},p);mk("line",{x1:0,y1:0,x2:0,y2:gap,stroke:"#B9CEEC","stroke-width":1.3},p);};
+  hatch("an-hA","#E3EDFB",9);hatch("an-hB","#D3E2F7",7);
+  const mA=mk("marker",{id:"an-ar",viewBox:"0 0 10 10",refX:"8",refY:"5",markerWidth:"7",markerHeight:"7",orient:"auto-start-reverse"},defs);
+  mk("path",{d:"M1,1 L9,5 L1,9",fill:"none",stroke:B,"stroke-width":"1.6","stroke-linecap":"round","stroke-linejoin":"round"},mA);
+  /* each part builds in on its own: its drawing (pencil filter) and its words (crisp) */
+  let G,TXT;const part=()=>{const g=mk("g",{},svg);G=mk("g",{filter:"url(#an-rough)"},g);TXT=mk("g",{},g);return g;};
+  const C=.866, SN=.40;   /* a shallow isometric view: plan (x, y) and height z → screen */
+  const iso=(o,x,y,z=0)=>[o[0]+(x-y)*C, o[1]+(x+y)*SN-z];
+  const poly=(pts,at)=>mk("polygon",{points:pts.map(p=>p.join(",")).join(" "),"stroke-linejoin":"round",...at},G);
+  function box(o,x0,y0,w,d,z0,h,st={}){   /* top face, front-left face (y = y0+d), front-right face (x = x0+w) */
+    const P=(x,y,z)=>iso(o,x,y,z), z1=z0+h, sw=st.sw||2.2, s=st.stroke||B;
+    poly([P(x0,y0+d,z0),P(x0+w,y0+d,z0),P(x0+w,y0+d,z1),P(x0,y0+d,z1)],{fill:st.l||"url(#an-hA)",stroke:s,"stroke-width":sw});
+    poly([P(x0+w,y0,z0),P(x0+w,y0+d,z0),P(x0+w,y0+d,z1),P(x0+w,y0,z1)],{fill:st.r||"url(#an-hB)",stroke:s,"stroke-width":sw});
+    poly([P(x0,y0,z1),P(x0+w,y0,z1),P(x0+w,y0+d,z1),P(x0,y0+d,z1)],{fill:st.top||TOP,stroke:s,"stroke-width":sw});
+    return P;}
+  const txt=(x,y,str,size,weight,fill,anchor="middle")=>{const t=mk("text",{x,y,"text-anchor":anchor,"font-size":size,"font-weight":weight,fill,style:"font-family:var(--body)"},TXT);t.textContent=str;return t;};
+  const label=(x,y,a,b,anchor="start",size=34)=>{const e=txt(x,y,a,size,700,FG,anchor);txt(x,y+size*1.12,b,size*.76,500,MU,anchor);return e;};
+  const arrow=(d,two=false)=>mk("path",{d,fill:"none",stroke:B,"stroke-width":2.4,"stroke-linecap":"round","marker-end":"url(#an-ar)",...(two?{"marker-start":"url(#an-ar)"}:{})},G);
+  /* the fan */
+  const O=[960,985], D=Math.PI/180, A0=167*D, A1=283*D, R0=420, R1=640, R2=820, HL=36, HU=74;
+  const at=(r,a,z=0)=>iso(O,r*Math.cos(a),r*Math.sin(a),z);
+  const arc=(r,a0,a1,z)=>{const n=Math.max(2,Math.ceil((a1-a0)/D/2));return [...Array(n+1)].map((_,i)=>at(r,a0+(a1-a0)*i/n,z));};
+  function sector(a0,a1,r0,r1,z0,z1,st={}){   /* the two end caps, the inner (front) wall, the top */
+    const s=st.stroke||B, sw=st.sw||2.2, wall=st.wall||"url(#an-hA)", cap=st.cap||"url(#an-hB)";
+    poly([at(r0,a0,z0),at(r1,a0,z0),at(r1,a0,z1),at(r0,a0,z1)],{fill:cap,stroke:s,"stroke-width":sw});
+    poly([at(r0,a1,z0),at(r1,a1,z0),at(r1,a1,z1),at(r0,a1,z1)],{fill:cap,stroke:s,"stroke-width":sw});
+    poly([...arc(r0,a0,a1,z1),...arc(r0,a0,a1,z0).reverse()],{fill:wall,stroke:s,"stroke-width":sw});
+    poly([...arc(r1,a0,a1,z1),...arc(r0,a0,a1,z1).reverse()],{fill:st.top||TOP,stroke:s,"stroke-width":sw});
+    return at((r0+r1)/2,(a0+a1)/2,z1);}
+  const READY={top:"#EAF2FE",stroke:B,sw:1.8,wall:"#D6E4F8",cap:"#C9DBF4"};
+  const MECH={top:"#EEF1F4",stroke:"#9AA8B8",sw:1.8,wall:"#E1E6EC",cap:"#D6DDE5"};
+  const src={}, srcTxt={};   /* the pieces that carry over into the Harness detail, and their words */
+  const sub=(k,f)=>{const g0=G;G=mk("g",{},g0);f();src[k]=G;G=g0;};
+  const tiles=(names,r0,r1,z,slots,st,col,size)=>names.forEach((n,i)=>{const [a,b]=slots[i];let c;sub(n,()=>{c=sector(a*D,b*D,r0,r1,z,z+12,st);});const e=txt(c[0],c[1]+size*.36,n,size,600,col);if(n==="Core Tools")srcTxt.tools=e;});
+  const gH=part();
+  sector(A0,A1,R1,R2,0,HU);
+  tiles(["Core Tools","Memory","Agent Loop","Context Management","Permissions"],R1+22,R2-22,HU,
+    [[169,190],[192.5,213.5],[216,234],[236.5,257.5],[260,281]],READY,B,24);
+  sector(A0,A1,R0,R1,0,HL);
+  tiles(["System Prompt","Hooks","Subagents","MCP Client"],R0+40,R1-40,HL,
+    [[169,189.5],[191.5,211],[239,258.5],[260.5,281]],MECH,"#5F6B76",23);
+  {const c=at((R0+R1)/2,225*D,HL);txt(c[0],c[1]-2,"Agent Harness",36,700,FG);txt(c[0],c[1]+28,"OS",26,500,MU);}
+  /* the model and its memory, on the same floor, wired into the foot of the step */
+  function floorWires(o,offs){const c=[(o[0]-O[0])/C/2+(o[1]-O[1])/SN/2,(o[1]-O[1])/SN/2-(o[0]-O[0])/C/2];
+    const r=Math.hypot(...c), u=[c[0]/r,c[1]/r], v=[-u[1],u[0]];
+    offs.forEach(k=>{const p=t=>[c[0]+u[0]*t+v[0]*k,c[1]+u[1]*t+v[1]*k];
+      const a=iso(O,...p(0),0), b=iso(O,...p(Math.sqrt(R0*R0-k*k)-r-4),0);arrow(`M${a[0]},${a[1]} L${b[0]},${b[1]}`);});}
+  const OC=at(250,190*D,0), OR=at(250,260*D,0);
+  const gM=part();
+  floorWires(OC,[-30,0,30]);
+  {const cw=150;let p;sub("llm",()=>{p=box(OC,-cw/2,-cw/2,cw,cw,0,24,{top:"#EAF2FE"});
+   for(let i=0;i<7;i++){const k=-cw/2+12+i*(cw-24)/6;
+     const a=p(k,cw/2,10), b=iso(OC,k,cw/2+16,6);mk("line",{x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:B,"stroke-width":2},G);
+     const c=p(cw/2,k,10), d=iso(OC,cw/2+16,k,6);mk("line",{x1:c[0],y1:c[1],x2:d[0],y2:d[1],stroke:B,"stroke-width":2},G);}
+   poly([p(-cw/2+30,-cw/2+30,24),p(cw/2-30,-cw/2+30,24),p(cw/2-30,cw/2-30,24),p(-cw/2+30,cw/2-30,24)],{fill:"#fff",stroke:B,"stroke-width":1.8});});
+   srcTxt.llm=label(OC[0]-150,OC[1]+110,"LLM","CPU","end");}
+  const gR=part();
+  floorWires(OR,[-60,0,60]);
+  {sub("ctx",()=>{box(OR,-150,-22,300,44,0,30,{top:"#F4F8FE"});
+   for(let i=0;i<5;i++)box(OR,-134+i*55,-14,43,28,30,8,{top:"#EAF2FE",stroke:B,sw:1.6,l:"#DCE8F8",r:"#D3E2F7"});});
+   srcTxt.ctx=label(OR[0]+150,OR[1]+110,"Context Window","RAM");}
+  /* the application on top: RiskMind, which is its Customization and its Plugins (shown before the run only) */
+  const gApp=part();
+  {const ped=at(R2+130,225*D,170);
+   mk("ellipse",{cx:ped[0],cy:ped[1]+14,rx:150,ry:38,fill:"url(#an-hA)",stroke:B,"stroke-width":2.2},G);
+   mk("ellipse",{cx:ped[0],cy:ped[1],rx:150,ry:38,fill:"#fff",stroke:B,"stroke-width":2.2},G);
+   const W=470,H=200,x=ped[0]-W/2,y=ped[1]-H-6;
+   mk("rect",{x,y,width:W,height:H,rx:16,fill:"#fff",stroke:B,"stroke-width":2.4},G);
+   mk("line",{x1:x,y1:y+36,x2:x+W,y2:y+36,stroke:B,"stroke-width":2},G);
+   [0,1,2].forEach(i=>mk("circle",{cx:x+24+i*20,cy:y+18,r:6,fill:i?"#fff":"#EAF2FE",stroke:B,"stroke-width":1.8},G));
+   const bw=(W-60)/2, bh=H-36-40, by=y+36+20;
+   [["cust","Customization",x+20],["plug","Plugin",x+40+bw]].forEach(([k,n,bx])=>{
+     src[k]=mk("rect",{x:bx,y:by,width:bw,height:bh,rx:12,fill:"#EAF2FE",stroke:B,"stroke-width":2},G);
+     srcTxt[k]=txt(bx+bw/2,by+bh/2+26*.36,n,26,700,B);});
+   const tc=at(R2-14,225*D,HU+12);
+   arrow(`M${ped[0]},${ped[1]+64} L${tc[0]},${tc[1]-8}`,true);
+   label(x+W+40,y+80,"RiskMind","Application");}
+  const parts=[gH,gM,gR];parts.app=gApp;parts.src={llm:src.llm,ctx:src.ctx,tools:src["Core Tools"],cust:src.cust,plug:src.plug};parts.srcTxt=srcTxt;return parts;
+})();
+/* on to the Harness detail: the CPU becomes its LLM, the RAM its Context, the Core Tools tile its Tools box.
+   Boxes like the detail's own leave from where the pieces are drawn and land on them; the detail fades in underneath */
+const anFly={ctx:el("div","abs dbox",S,""),tools:el("div","abs dbox",S,""),llm:el("div","abs dbox dllm",S,"")};   /* the LLM on top */
+/* the words go with them: LLM stays LLM, Context Window folds to Context, Core Tools to Tools (the box's heading) */
+const anTxt={ctx:el("div","abs",S,`Context<span class="anfold"> Window</span>`),tools:el("div","abs",S,`<span class="anfold">Core </span>Tools`),llm:el("div","abs",S,"LLM")};
+Object.values(anTxt).forEach(e=>css(e,{whiteSpace:"nowrap",lineHeight:"1",fontFamily:"var(--body)",fontWeight:"700"}));
+let anTgt=null;
+let anSrc=null;
+function renderAnaFly(t){
+  const on=t>=AN.o&&t<HD.z0+1.3;
+  [...Object.values(anFly),...Object.values(anTxt)].forEach(e=>e.style.display=on?"":"none");
+  for(const n in anFly)anParts.srcTxt[n].style.opacity=(t>=AN.o&&t<AP.in)||t>=AP.o?0:1;   /* the flying word takes over from the drawn one */
+  if(!on)return;
+  if(!anTgt){   /* where the detail's own words sit, measured once off its layout */
+    const d=h1.style.display, sc=S.getBoundingClientRect(), z=sc.width/1920;h1.style.display="";
+    const at=e=>{const r=e.getBoundingClientRect();return [(r.left-sc.left)/z,(r.top-sc.top)/z,r.height/z];};
+    anTgt={llm:at(hLLM.querySelector("span")),ctx:at(hCtxHead.firstElementChild),tools:at(hTool.querySelector(".tbh"))};
+    anTgt.llm.push(34);anTgt.ctx.push(20);anTgt.tools.push(22);h1.style.display=d;}
+  if(!anSrc){const d=ana.style.display;ana.style.display="block";anSrc={};
+    for(const k in anFly)anSrc[k]={box:anParts.src[k].getBBox(),txt:anParts.srcTxt[k].getBBox(),fs:+anParts.srcTxt[k].getAttribute("font-size")};ana.style.display=d;}
+  const k=AN_K, tx=960-AN_BOX.cx*k, ty=AN_Y-AN_BOX.cy*k;
+  const TO={llm:[HFX[0]+FLOW_DX,650,HFX[1]-HFX[0],140],tools:[HTX[0]+FLOW_DX,620,HTX[1]-HTX[0],200],
+    ctx:[HKX0+FLOW_DX,HKY0,HKX1-HKX0,HBY0+HCB.length*HBS+10-HKY0]};
+  /* first each box forms where its piece is drawn and its word slides in; then box and word travel together,
+     one after another, the LLM first */
+  const D0={llm:0,ctx:.12,tools:.24}, q=pr(t,AN.o,AN.o+.3), a=pr(t,AN.o,AN.o+.35,eio);
+  let m=0;
+  const mixC=(a,b,u)=>`rgb(${a.map((v,j)=>Math.round(lerp(v,b[j],u))).join(",")})`;
+  for(const n in anFly){const b=anSrc[n].box, s0=anSrc[n].txt, [x1,y1,w1,h1]=TO[n];m=pr(t,AN.o+.3+D0[n],AN.o+.3+D0[n]+.9,eio);
+    let bx=lerp(tx+b.x*k,x1,m), by=lerp(ty+b.y*k,y1,m), bw=lerp(b.width*k,w1,m), bh=lerp(b.height*k,h1,m);
+    /* the word: from where it is drawn into the middle of its box, then with the box to where the detail writes it */
+    const [tx1,ty1,th1,fs1]=anTgt[n], fs0=anSrc[n].fs*k, fs=lerp(fs0,fs1,m), e=anTxt[n], f=e.querySelector(".anfold");
+    if(f){const u=1-pr(m,.1,.6);css(f,{display:"inline-block",overflow:"hidden",verticalAlign:"bottom",whiteSpace:"pre",maxWidth:px(u*fs*10),opacity:pr(u,.4,1)});}
+    css(e,{fontSize:px(fs),color:n==="tools"?mixC([28,91,181],[22,36,58],m):"#16243A"});
+    const w=e.offsetWidth;
+    if(bw<w+48){bx-=(w+48-bw)/2;bw=w+48;}   /* a box is never narrower than its word */
+    css(anFly[n],{left:px(bx),top:px(by),width:px(bw),height:px(bh),opacity:q});
+    const cIn=[(bw-w)/2,(bh-fs)/2], tIn=[tx1-x1,ty1+(th1-fs1)/2-y1];   /* centred in the box · the detail's place in it */
+    const ox=lerp(cIn[0],tIn[0],m), oy=lerp(cIn[1],tIn[1],m);
+    const lx=tx+s0.x*k, ly=ty+s0.y*k+(s0.height*k-fs0)/2;
+    css(e,{left:px(lerp(lx,bx+ox,a)),top:px(lerp(ly,by+oy,a))});}
+}
+
+/* into the run, from the analogy with RiskMind on top: the CPU becomes the run's LLM, the RAM its Context,
+   the Core Tools tile its Tool Call(s) box, and RiskMind's two blocks its places in Files on Disk
+   (Customization → RiskMind · Built In, Plugin → Plugins). Box first, its word slides in, then both travel */
+/* each word right after its own box, so a box passing over another covers that one's word too (the LLM on top) */
+const AP_WORD={ctx:`Context<span class="anfold"> Window</span>`,plug:`Plugin<span class="anunfold">s</span>`,cust:`<span class="anunfold">RiskMind</span><span class="anfold"> Customization</span>`,tools:"Core Tools",llm:"LLM"};
+const apFly={}, apTxt={};
+for(const n in AP_WORD){apFly[n]=el("div","abs dbox"+(n==="llm"?" dllm":""),S,"");apTxt[n]=el("div","abs",S,AP_WORD[n]);}
+Object.values(apTxt).forEach(e=>css(e,{whiteSpace:"nowrap",lineHeight:"1",fontFamily:"var(--body)",fontWeight:"700"}));
+let apSrc=null, apTgt=null;
+function renderApFly(t){
+  const on=t>=AP.o&&t<INTRO+.1;
+  [...Object.values(apFly),...Object.values(apTxt)].forEach(e=>e.style.display=on?"":"none");
+  ["cust","plug"].forEach(n=>anParts.srcTxt[n].style.opacity=t>=AP.o?0:1);
+  if(!on)return;
+  if(!apSrc){const d=ana.style.display;ana.style.display="block";apSrc={};
+    for(const n in apFly)apSrc[n]={box:anParts.src[n].getBBox(),txt:anParts.srcTxt[n].getBBox(),fs:+anParts.srcTxt[n].getAttribute("font-size"),col:anParts.srcTxt[n].getAttribute("fill")};ana.style.display=d;}
+  if(!apTgt){const sc=S.getBoundingClientRect(), z=sc.width/1920;
+    const at=e=>{const r=e.getBoundingClientRect(), c=getComputedStyle(e);return {x:(r.left-sc.left)/z,y:(r.top-sc.top)/z,h:r.height/z,fs:parseFloat(c.fontSize),col:c.color.match(/\d+/g).slice(0,3).map(Number)};};
+    apTgt={llm:{r:[LA.x+G.ev.x,LANE_T+G.ev.y,G.ev.w,G.ev.h],t:at(evalN.querySelector(".h"))},
+      ctx:{r:[LC.x,LANE_T,LC.w,LANE_H],t:at(laneC.querySelector(".lane-h b"))},
+      tools:{r:[LA.x+G.tl.x,LANE_T+G.tl.y,G.tl.w,G.tl.h],t:at(toolN.querySelector(".sub"))},
+      cust:{r:[LR.x+IX,LANE_T+SEC.rmI,IW,RMH],t:at(secs[0])},plug:{r:[LR.x+IX,LANE_T+SEC.plI,IW,92],t:at(secs[1])}};}
+  {const sc=S.getBoundingClientRect(), z=sc.width/1920, r=cloudEl.getBoundingClientRect();   /* the run's Context is a cloud: land on it as it is drawn now */
+   apTgt.ctx.r=[(r.left-sc.left)/z,(r.top-sc.top)/z,r.width/z,r.height/z];}
+  const {k,tx,ty}=anTf(true), D0={llm:0,ctx:.1,tools:.2,plug:.3,cust:.45}, q=pr(t,AP.o,AP.o+.3), a=pr(t,AP.o,AP.o+.35,eio);
+  const hex=h=>[1,3,5].map(j=>parseInt(h.slice(j,j+2),16)), mixC=(A,B,u)=>`rgb(${A.map((v,j)=>Math.round(lerp(v,B[j],u))).join(",")})`;
+  const gone=pr(t,INTRO-.4,INTRO);   /* Files on Disk has no boxes of its own: those two give way as its cards come in */
+  for(const n in apFly){const b=apSrc[n].box, s0=apSrc[n].txt, [x1,y1,w1,h1]=apTgt[n].r, T=apTgt[n].t, m=pr(t,AP.o+.3+D0[n],AP.o+1.2+D0[n],eio);
+    let bx=lerp(tx+b.x*k,x1,m), by=lerp(ty+b.y*k,y1,m), bw=lerp(b.width*k,w1,m), bh=lerp(b.height*k,h1,m);
+    const fade=n==="cust"||n==="plug"?1-gone:1;
+    const fs0=apSrc[n].fs*k, fs=lerp(fs0,T.fs,m), e=apTxt[n];
+    const f=e.querySelector(".anfold"), uf=e.querySelector(".anunfold");
+    const swap=f&&uf;   /* one word handing over to another (Customization → RiskMind): whole until halfway, then a quick exchange */
+    if(f){const u=swap?1-pr(m,.42,.62,eio):1-pr(m,.1,.6);css(f,{display:"inline-block",overflow:"hidden",verticalAlign:"bottom",whiteSpace:"pre",maxWidth:px(u*fs*10),opacity:swap?u:pr(u,.4,1)});}
+    if(uf){const u=swap?pr(m,.42,.62,eio):pr(m,.4,.9);css(uf,{display:"inline-block",overflow:"hidden",verticalAlign:"bottom",whiteSpace:"pre",maxWidth:px(u*fs*6),opacity:swap?u:pr(u,0,.6)});}
+    css(e,{fontSize:px(fs),color:mixC(hex(apSrc[n].col),T.col,m),opacity:fade});
+    const w=e.offsetWidth;
+    if(bw<w+48){const g=w+48-bw;bx-=n==="cust"?g:n==="plug"?0:g/2;bw=w+48;}   /* never narrower than its word; RiskMind's two blocks widen away from each other */
+    css(apFly[n],{left:px(bx),top:px(by),width:px(bw),height:px(bh),opacity:q*fade*(n==="ctx"?1-pr(t,INTRO-.5,INTRO-.1):1),borderRadius:px(n==="ctx"?lerp(16,90,m):16)});
+    const cIn=[(bw-w)/2,(bh-fs)/2], tIn=[T.x-x1,T.y+(T.h-T.fs)/2-y1];
+    const lx=tx+s0.x*k, ly=ty+s0.y*k+(s0.height*k-fs0)/2;
+    css(e,{left:px(lerp(lx,bx+lerp(cIn[0],tIn[0],m),a)),top:px(lerp(ly,by+lerp(cIn[1],tIn[1],m),a))});}
+}
+const anTf=two=>{const k=two?AP_K:AN_K, cy=two?AP_CY:AN_BOX.cy;return {k,tx:960-AN_BOX.cx*k,ty:AN_Y-cy*k};};
+function renderAna(t){
+  const two=t>=AP.in, {k,tx,ty}=anTf(two);   /* after the Harness intro, and again before the run with RiskMind on top */
+  css(ana,{transform:`translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) scale(${k})`,
+    opacity:1-(two?pr(t,AP.o,AP.o+.45):pr(t,AN.o,AN.o+.45))});
+  /* the harness first, then the LLM and its memory beneath it (quicker the second time: it has been seen) */
+  const T0=two?AP.in:AN.in, ST=two?[0,.15,.3]:[0,.5,.75];
+  ST.forEach((d,i)=>{const a=pr(t,T0+d,T0+d+.6,eio);anParts[i].style.opacity=a;anParts[i].setAttribute("transform",`translate(0,${((1-a)*16).toFixed(1)})`);});
+  /* RiskMind rises on top, as the application */
+  const ap=two?pr(t,AP.in+.9,AP.in+1.6,eio):0;anParts.app.style.opacity=ap;anParts.app.setAttribute("transform",`translate(0,${((1-ap)*40).toFixed(1)})`);
+  ana.style.display=(t>=AN.in&&t<AN.o+.5)||(t>=AP.in&&t<AP.o+.5)?"block":"none";
+}
+
+function renderIntro(t){
+  const vis=t<INTRO+1;
+  [ringSvg,ana,...Object.values(anFly),...Object.values(anTxt),...Object.values(apFly),...Object.values(apTxt),...rlab,rowLLM,rowH,rowC,rowP,pFly,llmFly,bar,custGrp,custSum,...iFrames,...cust.map(c=>c.e),...plugs.map(c=>c.e)].forEach(e=>e.style.visibility=vis?"visible":"hidden");
+  if(!vis){   /* the run is the Plugin's detail: the bar is hidden through it and comes back with the dashboard, at Plugin */
+    const E=INTRO+runExt(END_T), q=pr(t,E+1.6,E+2.4);
+    bar.style.visibility=q>0?"visible":"hidden";bar.style.opacity=q;
+    if(q>0){const X=BAR.x[3];barFill.setAttribute("x2",X);barDot.setAttribute("cx",X);barDot.style.opacity=1;
+      bst.forEach(c=>{c.setAttribute("fill","#1C5BB5");c.setAttribute("stroke","#1C5BB5");});
+      blab.forEach((e,i)=>css(e,{color:i===3?"#1C5BB5":"var(--fg)",fontWeight:i===3?"700":"500"}));}
+    return;}
+  const tau=t-TR0;                                    // the opening into the run
+  const out=pr(tau,0,1.0);                            // rings, labels and the rows that stay behind fade
+  const fly=pr(tau,.2,1.8,eio);                       // cards fly to Files on Disk
+  const gone=pr(tau,2.0,2.4);                         // flown cards hand over to the real ones
+  const cur=t>=TR0+1e-9?-1:LS.reduce((c,s,i)=>t>=s?i:c,-1);
+  /* zoom: while a layer is shown in detail the ball shrinks into the progress bar's dot; it walks to the next
+     station and grows back into the ball at the centre */
+  const ZS=[[DL.z0,DL.z0+SHR,0,1],[DL.mv1,DL.end,1,0]];
+  ZS.push([RT[1]+RET,RT[1]+RET+SHR,0,1],[WK[1]+WALK,WK[1]+WALK+RISE,1,0],[RT[3]+RET,RT[3]+RET+SHR,0,1]);   /* in time order: a later entry wins */   /* only the Harness has a detail now */
+  let Z=0;ZS.forEach(([a,b,f,g])=>{if(t>=a)Z=lerp(f,g,pr(t,a,b,eio));});
+  /* where the bar has got to (0…3): the dot moves on steadily with playback through a layer's detail, and reaches the next station as it rises */
+  /* stations: 0 Augmented LLM · 1 Agent Harness · 2 Customization · 3 Plugin */
+  const bpos=pr(t,DL.z0+.8,DL.mv1,x=>x)
+    +pr(t,HD.z0+.8,WK[1]+WALK,x=>x)+pr(t,RT[2],LS[3]+1.1,eio);   /* through the Harness detail the dot moves on with playback */
+  const bx=k=>{const i=Math.floor(Math.min(k,2.999));return lerp(BAR.x[i],BAR.x[i+1],k-i);};
+  const Rcur=LY.R.reduce((r,R,i)=>t>=LS[i]?R:r,LY.R[0]);
+  /* keep each stage centred: the ball plus the current layer's intro sit in the middle of the frame;
+     as a new ring grows, the whole group slides to its new centre (and lets go as the cards fly to the run) */
+  const RW=[rowLLM.offsetWidth,rowH.offsetWidth,700,700];
+  const DX=LY.R.map((R,i)=>960-((LY.cx-R)+(ROWX+RW[i]+IFP))/2);
+  let dxNow=DX[0];for(let i=1;i<4;i++)dxNow+=(DX[i]-DX[i-1])*pr(t,LS[i],LS[i]+1.1,eio);
+  dxNow*=1-fly;
+  const zs=Math.pow(BAR.dot/Rcur,Z), zcx=lerp(LY.cx+dxNow,bx(bpos),Z), zcy=lerp(LY.cy,BAR.y,Z);
+  ringWrap.style.transform=`translate(${zcx-LY.cx*zs}px,${zcy-LY.cy*zs}px) scale(${zs})`;
+  ringSvg.style.opacity=1-pr(Z,.85,1);
+  const nz=1-Z, labZ=1-pr(Z,0,.35);
+  /* the bar */
+  const bIn=pr(t,DL.z0,DL.z0+.6)*(1-pr(tau,0,.8));   /* the bar arrives as the ball first shrinks */
+  bar.style.opacity=bIn;bar.style.visibility=bIn>0?"visible":"hidden";
+  barFill.setAttribute("x2",bx(bpos));
+  barDot.setAttribute("cx",bx(bpos));barDot.style.opacity=pr(Z,.8,1);
+  bst.forEach((c,i)=>{const done=bpos>=i-1e-6;c.setAttribute("fill",done?"#1C5BB5":"#fff");c.setAttribute("stroke",done?"#1C5BB5":"#B8C2CB");});
+  blab.forEach((e,i)=>{const here=Math.floor(bpos+1e-6)===i;   /* the station the dot has last reached */css(e,{color:here?"#1C5BB5":bpos>=i?"var(--fg)":"#9AA6B1",fontWeight:here?"700":"500"});});
+  const ROWS=[rowLLM,rowH];
+  LAYERS.forEach((L,i)=>{
+    const g=pr(t,LS[i],LS[i]+1.1,eio), r0=i?LY.R[i-1]:0, r1=lerp(r0,LY.R[i],g);
+    const on=i===cur, built=g>0;
+    rings[i].setAttribute("d",g>0?ringD(r0,r1):"");
+    rings[i].setAttribute("fill",on?"#EAF2FE":"#F7FAFE");
+    rings[i].setAttribute("stroke",on?"#1C5BB5":"#A9C4EA");
+    rings[i].setAttribute("stroke-width",on?"2.5":"2");
+    rings[i].style.opacity=1-out;
+    const la=pr(t,LS[i]+.7,LS[i]+1.3);
+    const lab=rlab[i];
+    if(i===0){
+      /* "Augmented LLM"; as it flies to the LLM node's heading, "Augmented" folds away */
+      lab.style.opacity=0;
+      {const k=1-pr(tau,.2,1.0,eio);css(llmFlyA,{opacity:k,height:px(29*k),fontSize:px(22*k),overflow:"hidden"});llmFly.style.fontSize=px(lerp(22,34,fly));}
+      const w=llmFly.offsetWidth,h=llmFly.offsetHeight;
+      const x0=LY.cx-w/2,y0=L.ly-h/2, x1=LA.x+G.ev.x+22+4, y1=LANE_T+G.ev.y+16+4;   // +4: the lane and node borders
+      css(llmFly,{left:px(lerp(x0,x1,fly)),top:px(lerp(y0,y1,fly)),opacity:la*labZ*(1-pr(tau,2.2,3.0)),color:on?"#1C5BB5":"var(--fg)"});
+    } else {
+      css(lab,{left:px(LY.cx),top:px(L.ly),transform:"translate(-50%,-50%)",opacity:la*(1-out)*labZ});
+      lab.querySelector(".rn").style.color=on?"#1C5BB5":"var(--fg)";
+    }
+    /* the leader from the label to its row */
+    const lw=i===0?llmFly.offsetWidth:lab.querySelector(".rn").offsetWidth;
+    /* it reaches out after the ring has grown, and draws back (after the row has left) before the ball shrinks */
+    const lp=pr(t,LS[i]+.9,LS[i]+1.5,eio)*(1-pr(t,RT[i]+.2,RT[i]+RET,eio));
+    /* LLM: from its label; outer layers: from the middle of their band, on the ball's midline */
+    const lx0=i===0?LY.cx+lw/2+30:LY.cx+(LY.R[i-1]+LY.R[i])/2, lx1=ROWX-IFP-2;
+    leaders[i].setAttribute("x1",lx0);leaders[i].setAttribute("x2",lerp(lx0,lx1,lp));
+    leaders[i].setAttribute("y1",LY.cy);leaders[i].setAttribute("y2",LY.cy);
+    leaders[i].style.opacity=lp>.01?(1-out):0;
+    leaders[i].setAttribute("stroke",on?"#1C5BB5":"#A9C4EA");
+    lDots[i].setAttribute("cx",lx0);lDots[i].setAttribute("cy",LY.cy);lDots[i].style.opacity=lp>.01?(1-out):0;
+  });
+  /* a layer's row leaves first when its intro draws back */
+  const dim=i=>1-pr(t,RT[i],RT[i]+.3);
+  const rowIn=i=>pr(t,LS[i]+1.2,LS[i]+1.8);
+  [rowLLM,rowH].forEach(r=>r.style.translate=`${dxNow.toFixed(1)}px 0px`);
+  css(rowLLM,{top:px(LY.cy-rowLLM.offsetHeight/2),opacity:dim(0)*(1-out)});
+  {const a=pr(t,LS[0]+1.2,LS[0]+1.8), b=pr(t,LS[0]+1.7,LS[0]+2.2);const [d,m]=rowLLM.children;
+    css(d,{opacity:a,transform:`translateY(${(1-a)*8}px)`});css(m,{opacity:b,transform:`translateY(${(1-b)*8}px)`});}
+  css(rowH,{top:px(LY.cy-rowH.offsetHeight/2),opacity:dim(1)*(1-out)});
+  renderAna(t);renderAnaFly(t);renderApFly(t);   /* after the Harness card and the ball have gone: the computer analogy, on its own */   /* centred on the ball's midline, where the leader arrives */
+  {const a=pr(t,LS[1]+1.2,LS[1]+1.8);css(hdef2,{opacity:a,transform:`translateY(${(1-a)*8}px)`});}
+  mgrps.forEach((g,gi)=>{const g0=LS[1]+2.0+gi*.7;
+    const a=pr(t,g0,g0+.4);g.querySelector(".mgt").style.opacity=a;
+    [...g.querySelectorAll(".mech")].forEach((m,j)=>{const b=pr(t,g0+.15+j*.1,g0+.5+j*.1);css(m,{opacity:b,transform:`translateY(${(1-b)*8}px)`,
+      borderColor:gi===0?"#7FA9E6":"#C9D2DC",color:gi===0?"#1C5BB5":"#5F6B76",background:gi===0?"#F3F7FD":"#EEF1F4",borderStyle:"solid"});});   /* yellow/blue only where the SDK's half is set against RiskMind's (Customization, Plugin) */
+    g.querySelector(".mgt").style.color=gi===0?"#1C5BB5":"#5F6B76";});
+  const place=(arr,ly,li,gap,d0=1.2)=>{
+    const tw=arr.reduce((s,c)=>s+c.e.offsetWidth,0)+gap*(arr.length-1);let x=ROWX;
+    arr.forEach((c,j)=>{
+      const w=c.e.offsetWidth,h=c.e.offsetHeight, a=pr(t,LS[li]+d0+j*.35,LS[li]+d0+.5+j*.35);
+      const x0=x+dxNow,y0=ly-h/2;x+=w+gap;
+      let X=x0,Y=y0,op=a*dim(li);
+      if(c.to){X=lerp(x0,LR.x+c.to.x,fly);Y=lerp(y0,LANE_T+c.to.y,fly);op=a*lerp(dim(li),1,fly)*(1-gone);}
+      else op*=1-out;
+      const hot=cur===li;
+      css(c.e,{left:px(X),top:px(Y),opacity:op,transform:`translateY(${(1-a)*8}px)`,
+        borderColor:hot?"#7FA9E6":"var(--line)",background:hot?"#F3F7FD":"#fff"});
+    });
+  };
+  /* Customization: the definition again; Ready to Use steps back, Mechanism Only shows what RiskMind puts in each slot.
+     The three built-ins fly to Files on Disk as the run opens, shrinking into its upright cards */
+  custSum.style.opacity=0;
+  const cTot=rowC.offsetHeight, cTop=LY.cy-cTot/2;
+  rowC.style.translate=`${dxNow.toFixed(1)}px 0px`;
+  css(rowC,{top:px(cTop),opacity:dim(2)*(1-out)});
+  {const a=pr(t,LS[2]+1.2,LS[2]+1.8);css(rowC.querySelector(".hdef2"),{opacity:a,transform:`translateY(${(1-a)*8}px)`});
+   cGroups[0].querySelector(".mgt").style.opacity=pr(t,LS[2]+1.6,LS[2]+2.0);
+   /* after the stop: the services every plugin gets, then the plugin's lifecycle */
+   const S0=CI+.1;
+   cGroups.slice(1).forEach((g,gi)=>{const g0=S0+gi*.8;g.querySelector(".mgt").style.opacity=pr(t,g0,g0+.4);
+     [...g.querySelectorAll(".mech")].forEach((m,k)=>{const s0=g0+.15+k*.12, b=pr(t,s0,s0+.4), soon=m.classList.contains("soon");
+       css(m,{opacity:b,transform:`translateY(${(1-b)*8}px)`,...(soon?{borderColor:"#C9D2DC",color:"#9AA6B1",background:"#fff",borderStyle:"dashed"}:{borderColor:"#7FA9E6",color:"#1C5BB5",background:"#F3F7FD"})});});});
+   const g1=cGroups[2];
+   }
+  cRows.forEach((r,j)=>{const a=pr(t,LS[2]+1.8+j*.35,LS[2]+2.3+j*.35);css(r,{opacity:a,transform:`translateY(${(1-a)*8}px)`});
+    const m=r.querySelector(".mech"), off=j===4;css(m,off?{borderColor:"#C9D2DC",color:"#9AA6B1",background:"#fff",borderStyle:"dashed"}:{borderColor:"#DDBB4C",color:"#8A6D12",background:"#FCF5DA"});});   /* the SDK's mechanism (yellow) → what RiskMind fills it with (blue) */
+  cust.forEach((c,j)=>{
+    const a=pr(t,LS[2]+1.8+j*.35,LS[2]+2.3+j*.35), hot=cur===2, sl=cSlots[j];
+    /* the slot's place inside rowC, measured as drawn (its row slides in, so offsetTop would be relative to the row) */
+    const rc=rowC.getBoundingClientRect(), sr=sl.getBoundingClientRect(), k=rowC.offsetWidth/rc.width;
+    const x0=ROWX+dxNow+(sr.left-rc.left)*k, y0=cTop+(sr.top-rc.top)*k;
+    let X=x0,Y=y0,W=CRW,Hh=CRH,op=a*dim(2);
+    if(c.to&&fly>0){   /* the run opens from the Plugin stop: the built-ins leave their ring's label in the ball */
+      const lx=LY.cx+dxNow, ly=LAYERS[2].ly;
+      X=lerp(lx-60,LR.x+c.to.x,fly);Y=lerp(ly-15,LANE_T+c.to.y,fly);W=lerp(120,c.to.w,fly);Hh=lerp(30,c.to.h,fly);op=0;}   /* the run now opens from the analogy */
+    else op*=1-out;
+    css(c.e,{left:px(X),top:px(Y),width:px(W),height:px(Hh),opacity:op,transform:`translateY(${(1-a)*8}px)`,
+      borderColor:c.off?"#C9D2DC":hot?"#7FA9E6":"var(--line)",borderStyle:c.off?"dashed":"solid",background:c.off||!hot?"#fff":"#F3F7FD"});
+    [...c.e.children].forEach(k=>k.style.opacity=1-pr(fly,0,.35));
+  });
+  /* Plugin: the definition, then one dashed box (one plugin) whose components fill the Mechanism Only slots.
+     As the run opens the box flies to Files on Disk and becomes the three product plugins there */
+  const pTot=rowP.offsetHeight, pTop=LY.cy-pTot/2;
+  rowP.style.translate=`${dxNow.toFixed(1)}px 0px`;
+  css(rowP,{top:px(pTop),opacity:dim(3)*(1-out)});
+  {const a=pr(t,LS[3]+1.2,LS[3]+1.8);css(pDef,{opacity:a,transform:`translateY(${(1-a)*8}px)`});
+   pHead.style.opacity=pr(t,LS[3]+1.6,LS[3]+2.0);
+   const bA=pr(t,LS[3]+1.8,LS[3]+2.2);css(pBox,{borderColor:fly>0?"transparent":`rgba(127,169,230,${bA})`});pBl.style.opacity=fly>0?0:bA;
+   pRows.forEach((r,j)=>{const b=pr(t,LS[3]+2.0+j*.35,LS[3]+2.5+j*.35);css(r,{opacity:b,transform:`translateY(${(1-b)*8}px)`});
+     css(r.querySelector(".mech"),{borderColor:"#DDBB4C",color:"#8A6D12",background:"#FCF5DA"});
+     css(pCards[j],{opacity:b*(1-pr(fly,0,.35)),transform:`translateY(${(1-b)*8}px)`});});
+   /* the box, as drawn, then on to the three plugin cards' place in Files on Disk */
+   const rc=rowP.getBoundingClientRect(), br=pBox.getBoundingClientRect(), k=rowP.offsetWidth/rc.width;
+   const bx0=ROWX+dxNow+(br.left-rc.left)*k, by0=pTop+(br.top-rc.top)*k, bw0=br.width*k, bh0=br.height*k;
+   const A=PLUG[0], Zp=PLUG[PLUG.length-1], bx1=LR.x+A.x, by1=LANE_T+A.y, bw1=Zp.x+Zp.w-A.x, bh1=A.h;
+   css(pFly,{left:px(lerp(bx0,bx1,fly)),top:px(lerp(by0,by1,fly)),width:px(lerp(bw0,bw1,fly)),height:px(lerp(bh0,bh1,fly)),opacity:0});
+   plugs.forEach(c=>css(c.e,{left:px(LR.x+c.to.x),top:px(LANE_T+c.to.y),opacity:0,transform:"none",borderColor:"var(--line)",background:"#fff"}));}
+  /* the frames: around each layer's intro, in on the leader's arrival, out with the intro */
+  const IB=[[LY.cy-rowLLM.offsetHeight/2,RW[0],rowLLM.offsetHeight],[LY.cy-rowH.offsetHeight/2,RW[1],rowH.offsetHeight],
+            [cTop,RW[2],cTot],[pTop,RW[3],pTot]];   /* Customization: the rowC block */
+  iFrames.forEach((f,i)=>{const [y,w,h]=IB[i];const a=pr(t,LS[i]+1.3,LS[i]+1.7)*(1-pr(t,RT[i]+.1,RT[i]+.4))*(1-out);
+    css(f,{left:px(ROWX+dxNow-IFP),top:px(y-IFP),width:px(w+2*IFP),height:px(h+2*IFP),opacity:a});});
+  /* captions */
+  /* no title bar before the run: the rings, the rows and the detail pages carry the words */
+}
+
+/* ===== Layer 1 in detail, read left to right on one line at y=MY.
+   A · the LLM alone: User → LLM (Prompt) → User (Text). Nothing else. Stop sA.
+   B · it grows a Tool and a Context (memory), and the three together are the Augmented LLM, the smallest harness.
+       One turn, each arrow lighting up as it draws: User → LLM (Prompt) → Tool (Tool Call Request) → LLM (Result) → User (Text).
+       The context floats above the LLM and is sent in full on every call. Stop s1: the next step waits for the user ===== */
+const d0=el("div","abs",S);css(d0,{left:"0",top:"0",width:"1920px",height:"1080px"});
+const d0svg=document.createElementNS(NS,"svg");d0svg.setAttribute("width",1920);d0svg.setAttribute("height",1080);
+css(d0svg,{position:"absolute",left:"0",top:"0",overflow:"visible"});d0.appendChild(d0svg);
+d0svg.innerHTML=`<defs><marker id="dh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1,1 L8,5 L1,9" fill="none" stroke="#98A3B0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="dhA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1,1 L8,5 L1,9" fill="none" stroke="#1C5BB5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>`;
+/* the same scalloped cloud as the run's Context, here at any box */
+function cloudAt(x0,y0,x1,y1,R=56){
+  const P=[];const corner=(cx,cy,a0)=>{for(const f of [.5,1])P.push([cx+R*Math.cos(a0+f*Math.PI/2),cy+R*Math.sin(a0+f*Math.PI/2)]);};
+  for(let x=x0+R,k=0;x<x1-R-40;x+=80+24*hsh(k++))P.push([x,y0]);
+  P.push([x1-R,y0]);corner(x1-R,y0+R,-Math.PI/2);
+  const side=[];for(let y=y0+R,k=0;;k++){y+=74+24*hsh(k+7);if(y>y1-R-.6*74)break;side.push(y);}
+  side.forEach(y=>P.push([x1,y]));P.push([x1,y1-R]);corner(x1-R,y1-R,0);
+  for(let x=x1-R,k=0;x>x0+R+40;k++){x-=80+24*hsh(k+3);if(x>x0+R+40)P.push([x,y1]);}
+  P.push([x0+R,y1]);corner(x0+R,y1-R,Math.PI/2);
+  side.slice().reverse().forEach(y=>P.push([x0,y]));P.push([x0,y0+R]);corner(x0+R,y0+R,Math.PI);
+  let d=`M${P[0][0].toFixed(1)},${P[0][1].toFixed(1)}`;
+  for(let i=0;i<P.length;i++){const A2=P[i],B=P[(i+1)%P.length],ch=Math.hypot(B[0]-A2[0],B[1]-A2[1]);if(ch<1)continue;
+    d+=` A${(ch*.62).toFixed(1)},${(ch*.62).toFixed(1)} 0 0 1 ${B[0].toFixed(1)},${B[1].toFixed(1)}`;}
+  return d+"Z";
+}
+const cl=document.createElementNS(NS,"path");cl.setAttribute("fill","#F7FAFE");cl.setAttribute("stroke","#A9C4EA");cl.setAttribute("stroke-width","2");d0svg.appendChild(cl);
+function dArrow(pts){const p=document.createElementNS(NS,"path");p.setAttribute("d",dOf(shorten(pts,6)));p.setAttribute("fill","none");
+  p.setAttribute("stroke","#98A3B0");p.setAttribute("stroke-width","2.2");p.setAttribute("stroke-linejoin","round");d0svg.appendChild(p);return p;}
+function drawP(p,q,hot){if(p._L==null)p._L=p.getTotalLength();
+  p.setAttribute("stroke-dasharray",p._L);p.setAttribute("stroke-dashoffset",p._L*(1-q));p.style.opacity=q>0?1:0;
+  p.setAttribute("stroke",hot?"#1C5BB5":"#98A3B0");p.setAttribute("stroke-width",hot?"3":"2.2");
+  p.setAttribute("marker-end",q>.97?(hot?"url(#dhA)":"url(#dh)"):"none");}
+const dBox=(x,y,w,h,html,cls="dbox")=>{const e=el("div",cls,d0,html);css(e,{left:px(x),top:px(y),width:px(w),height:px(h)});return e;};
+const dlbl=(txt,x,y,cls="dhd",align="center")=>{const e=el("div","abs "+cls,d0,txt);css(e,{left:px(x),top:px(y),transform:align==="center"?"translateX(-50%)":"none",textAlign:align,whiteSpace:"nowrap"});return e;};
+/* geometry: one line at y=720; out on the upper track, back on the lower */
+const MY=720, UP=MY-25, DN=MY+25;
+const UX=[300,380], FX=[860,1060], TX2=[1460,1680];          // user circle · LLM box · tool box (x ranges)
+const KX0=740, KX1=1180, KY0=90, BX=760, BW2=400, BY0=166, BH=42, BSTEP=50;
+const ctxHead=dlbl(`<span style="font:700 20px var(--body);color:var(--fg)">Context</span> <span style="font:500 18px var(--body);color:var(--muted)">· The LLM's Memory</span>`,762,118,"","left");
+const CB=[
+  {label:"System Prompt",sub:"instructions",c:"base"},
+  {label:"Prompt",sub:"from the user",c:"base"},
+  {label:"Tool Call Request",sub:"fxo_drill_down · input",c:"teal"},
+  {label:"Tool Result",sub:"HTML location",c:"teal"},
+  {label:"Text",sub:"to the user",c:"llm"}
+].map((b,i)=>{const c=COL[b.c];const e=el("div","blk",d0,`<div class="bt"><span>${b.label}</span><span class="sub">${b.sub}</span></div>`);
+  css(e,{left:px(BX),top:px(BY0+i*BSTEP),width:px(BW2),background:c.bg,borderColor:c.st,color:c.t});return {...b,e};});
+const aug=dBox(700,62,1020,800,"","augf");
+const augLbl=dlbl("Augmented LLM",726,50,"auglbl","left");
+const dLLM=dBox(860,650,200,140,`<div class="dc" style="flex-direction:column;gap:2px"><span style="font:700 34px var(--display)">LLM</span><span class="dcall"></span></div>`,"dbox dllm");
+const callTag=dLLM.querySelector(".dcall");
+const keep=dlbl("Keeps nothing between calls",960,808,"dnote2");
+const tool=dBox(TX2[0],650,TX2[1]-TX2[0],140,`<div class="dc" style="flex-direction:column;gap:4px"><span>Tool</span><span style="font:500 15px var(--body);color:var(--muted)">Confluence</span></div>`);
+const USR=`<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1C5BB5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+const user=dBox(UX[0],MY-40,80,80,USR,"duser");
+const userLbl=dlbl("User",340,MY+52,"dsub");
+const nextNote=dlbl("The next step waits for the user",340,MY+82,"dnote2");
+/* the four tracks */
+const AGAP=14;   /* every arrow stops short of what it joins, at both ends (shorten() takes another 6 at the head) */
+const tPrompt=dArrow([[UX[1]+AGAP,UP],[FX[0]-AGAP+6,UP]]), tText=dArrow([[FX[0]-AGAP,DN],[UX[1]+AGAP-6,DN]]);
+const tReq=dArrow([[FX[1]+AGAP,UP],[TX2[0]-AGAP+6,UP]]), tRes=dArrow([[TX2[0]-AGAP,DN],[FX[1]+AGAP-6,DN]]);
+const lPrompt=dlbl("Prompt",530,UP-30), lText=dlbl(`Text<div class="dsn">"Here is a summary of …"</div>`,530,DN+8);
+const lReq=dlbl(`<div class="dsn" style="margin:0 0 4px">{ "tool": "fxo_drill_down", "input": {…} }</div>Tool Call Request`,1280,UP-52), lRes=dlbl(`Result<div class="dsn">HTML location</div>`,1280,DN+8);
+/* the context goes down to the LLM, in full, on every call */
+const aCtx=dArrow([[960,440],[960,650]]);
+const sentLbl=dlbl("Sent in full, every call",978,0,"dhd","left");
+/* the dot that carries the turn */
+const dot=document.createElementNS(NS,"circle");dot.setAttribute("r","9");dot.setAttribute("fill","#1C5BB5");d0svg.appendChild(dot);
+/* the user–LLM row: centred while the LLM is alone (A), at its place on the line once the tool and the memory grow in (B) */
+const rowG=document.createElementNS(NS,"g");d0svg.appendChild(rowG);[tPrompt,tText,dot].forEach(n=>rowG.appendChild(n));
+const ROW_DIV=[user,userLbl,nextNote,dLLM,keep,lPrompt,lText];
+const ROW_OFF=[960-(UX[0]+FX[1])/2,540-MY];
+
+/* ===== Process as Tool: after the Augmented LLM (stop s1), before the Agent Harness.
+   The Augmented LLM again, but the tool is an MCP server whose tools each wrap a whole workflow.
+   The LLM picks one tool and fills its input, calls it once, and answers with what comes back.
+   Every tool's description and input schema sit in the context on every call.
+   pt … tA: the tool box opens into the MCP server; Tool Definitions join the context; one call to fxo_drill_down. Stop tA.
+   tA … tB: Muni's tools join; the definitions grow and fill the context. Stop tB. ===== */
+const PTN=[["fxo_portfolio","(date)"],["fxo_drill_down","(date, by)"],["fxo_adhoc","(question)"],
+  ["muni_portfolio","(date)"],["muni_drill_down","(date, by)"],["muni_adhoc","(question)"]];
+const PTA={x:TX2[0],y:560,w:380,h:270}, PTB={x:TX2[0],y:300,w:380,h:490};   /* the MCP server, one product / two */
+const ptHead=dlbl("MCP",0,0,"ptmh","left");
+/* one MCP server per product, each with an on/off switch the user controls (as in RBC Assist) */
+const ptSub=["FX Option","Muni"].map(n=>el("div","abs ptsub",d0,`<span class="ptsn">${n}</span><span class="ptsw"><i></i></span>`));
+const ptRows=PTN.map(([n,a])=>{const e=el("div","abs wtbox ptrow",d0,`<span class="wtn">${n}<span class="pta">${a}</span></span><span class="wmini">${"<i></i>".repeat(4)}</span>`);return e;});
+const ptMore=dlbl("•••",0,0,"wfmore");
+const ptLbl=dlbl(`Process as Tool<span class="wfsfx"></span>`,726,50,"auglbl","left");
+const ptSfx=ptLbl.querySelector(".wfsfx");
+/* the tool definitions: in the context, under the system prompt; two lines per tool */
+const ptDef=el("div","blk ptdef",d0,`<div class="ptdh">Tool Definitions</div><div class="ptl">confluence_search · description + input schema</div>${PTN.map(([n])=>`<div class="ptl">${n} · description + input schema</div>`).join("")}<div class="ptl ptdots">•••</div>`);
+const ptLines=[...ptDef.querySelectorAll(".ptl")];
+const PTL=20, PTHD=34;
+/* one line per tool: FX Option's three, Muni's three, then "•••"; Muni's leave when its server is switched off */
+const ptDefH=t=>{const a=pr(t,DL.b0+1.2,DL.b0+1.8,eio), off=pr(t,DL.off+.3,DL.off+.9,eio);
+  return a*(PTHD+7*PTL+20)-off*3*PTL;};   /* +20: room under the last line */
+function renderPT(t,cy1){
+  const p0=DL.pt, OF=DL.off, on=t>=p0;
+  const els=[ptHead,ptMore,ptLbl,ptDef,...ptRows,...ptSub];   /* everything this part adds, hidden before it starts */
+  if(!on){els.forEach(e=>e.style.opacity=0);return;}
+  const ap=(e,a,b,k=1)=>{const q=pr(t,a,b)*k;e.style.opacity=q;return q;};
+  /* the frame, as wide as the MCP box needs; the tool is the MCP box (two servers) from the start */
+  aug.style.width="1180px";augLbl.style.visibility="";ptLbl.style.opacity=0;
+  const R=PTB;
+  css(tool,{left:px(R.x),top:px(R.y),width:px(R.w),height:px(R.h)});tool.firstChild.style.opacity=0;
+  css(ptHead,{left:px(R.x+20),top:px(R.y+16)});ap(ptHead,p0+.8,p0+1.2);
+  const legs=r0=>({prompt:[r0,r0+.8],req:[r0+1.2,r0+2.0],res:[r0+2.9,r0+3.7],text:[r0+4.1,r0+4.9]});
+  const LG=legs(DL.run);   /* the one turn, after Muni is switched off */
+  /* the user switches Muni's server off: its tools grey out and their definitions leave the context */
+  const off=pr(t,OF,OF+.3,eio), offD=pr(t,OF+.3,OF+.9,eio);
+  const SY=g=>R.y+44+g*202;
+  ptSub.forEach((b,g)=>{const q=pr(t,p0+.9+g*.25,p0+1.2+g*.25);
+    css(b,{left:px(R.x+14),top:px(SY(g)),width:px(R.w-28),height:"190px",opacity:q*(g?1-.5*off:1),borderStyle:g&&off>.5?"dashed":"solid"});
+    const sw=b.querySelector(".ptsw"), isOn=!(g&&off>.5);sw.style.opacity=pr(t,p0+1.9,p0+2.2);sw.classList.toggle("off",!isOn);
+    if(g){sw.firstChild.style.left=px(lerp(19,3,off));sw.style.background=off>.5?"#C9D2DC":"#1C5BB5";}});   /* the switch slides off */
+  ptRows.forEach((r,k)=>{const g=k<3?0:1, y=SY(g)+40+(k%3)*48, s=p0+1.1+g*.25+(k%3)*.1;
+    const lit=k===1&&t>=LG.req[1];
+    css(r,{left:px(R.x+26),top:px(y),width:px(R.w-52),height:"42px",opacity:pr(t,s,s+.3)*(g?1-.6*off:1),borderColor:lit?"#1C5BB5":"",background:lit?"#EEF4FD":""});
+    [...r.querySelectorAll("i")].forEach((d,j)=>d.classList.toggle("on",k===1&&t>=LG.req[1]+.15+j*.15));});
+  css(ptMore,{left:px(R.x+R.w/2),top:px(SY(1)+200)});ap(ptMore,p0+1.8,p0+2.1);
+  /* one call: the request names the tool and its input; the result is where the report is */
+  const hot=([a,b])=>t>=a&&t<b+.25;
+  const kA=1-pr(t,DL.b0,DL.b0+.5), dr=(L,a)=>Math.max(pr(t,L[0],L[1]),a*kA);   /* the LLM alone's arrows clear as B begins, then draw in the turn */
+  drawP(tPrompt,dr(LG.prompt,1),hot(LG.prompt));drawP(tReq,dr(LG.req,0),hot(LG.req));
+  drawP(tRes,dr(LG.res,0),hot(LG.res));drawP(tText,dr(LG.text,1),hot(LG.text));
+  const g=c=>pr(t,c,c+.3)*(1-pr(t,c+.9,c+1.3));
+  dLLM.style.boxShadow=`0 0 0 ${(6*Math.max(g(LG.prompt[1]),g(LG.res[1]))).toFixed(1)}px rgba(28,91,181,.18)`;
+  /* the user: switching Muni off, then the text arriving */
+  user.style.boxShadow=`0 0 0 ${(6*Math.max(pr(t,OF-.1,OF+.1)*(1-pr(t,OF+.5,OF+.8)),g(LG.text[1]))).toFixed(1)}px rgba(28,91,181,.18)`;
+  tool.style.boxShadow="none";tool.style.borderColor="#A9C4EA";
+  /* the context: the definitions fill it as the picture builds; Muni's leave; then the turn lands */
+  const dh=ptDefH(t), full=pr(t,p0+1.9,p0+2.3)*(1-offD);
+  css(ptDef,{left:px(BX),top:px(BY0+BSTEP),width:px(BW2),height:px(Math.max(0,dh-8)),opacity:dh>2?1:0,
+    background:"#fff",borderColor:full>.5?"#1C5BB5":"#A9C4EA",color:"var(--fg)"});
+  ptLines.forEach((l,j)=>{if(j===0){l.style.display="none";return;}
+    l.style.display="";const s=j===7?p0+1.9:p0+1.3+(j-1)*.08, muni=j>=4&&j<=6;
+    css(l,{opacity:pr(t,s,s+.3)*(muni?1-offD:1),height:px(muni?20*(1-offD):20),overflow:"hidden"});});
+  const land=[0,LG.prompt[1],LG.req[0]+.1,LG.res[1],LG.text[0]+.1];
+  CB.forEach((b,i)=>{if(!i)return;const q=pr(t,land[i],land[i]+.4,eio);
+    css(b.e,{top:px(BY0+i*BSTEP+dh),height:px(BH*q),opacity:q,visibility:q>0?"visible":"hidden",boxShadow:"none"});});
+  /* the full context presses on the LLM */
+  cl.setAttribute("stroke",full>.05?"#1C5BB5":cl.getAttribute("stroke"));cl.setAttribute("stroke-width",(2+2*full).toFixed(2));
+  css(sentLbl,{left:px(980)});
+  /* the context box, redrawn round what it now holds */
+  const bottom=Math.max(BY0+BSTEP+dh,...CB.slice(1).map(b=>+b.e.style.opacity>0?parseFloat(b.e.style.top)+parseFloat(b.e.style.height):0));
+  const c1=Math.max(KY0+340,bottom+14), r=16;
+  cl.setAttribute("d",`M${KX0+r},${KY0} H${KX1-r} Q${KX1},${KY0} ${KX1},${KY0+r} V${c1-r} Q${KX1},${c1} ${KX1-r},${c1} H${KX0+r} Q${KX0},${c1} ${KX0},${c1-r} V${KY0+r} Q${KX0},${KY0} ${KX0+r},${KY0} Z`);
+  aCtx.setAttribute("d",dOf(shorten([[960,c1+AGAP],[960,650-AGAP+6]],6)));aCtx._L=null;drawP(aCtx,pr(t,DL.b0+1.0,DL.b0+1.4),false);
+}
+
+function renderD0(t){
+  const on=t>=DL.z0&&t<DL.back+.6;
+  d0.style.display=on?"":"none";if(!on)return;   /* display, not visibility: the blocks set their own visibility */
+  d0.style.opacity=pr(t,DL.z0+.5,DL.z0+1.0)*(1-pr(t,DL.back,DL.back+.5));
+  const T=DL.z0+.7, B0=DL.b0, R=DL.run;   /* R: the turn (the same legs as renderPT's) */
+  const mvR=1-pr(t,B0,B0+.8,eio), ox=ROW_OFF[0]*mvR, oy=ROW_OFF[1]*mvR;
+  d0.style.translate=`${((FLOW_DX-80)*(1-mvR)).toFixed(1)}px 0px`;   /* the Augmented LLM frame (with the MCP box) is 160px wider than the other flow pictures */
+  rowG.setAttribute("transform",`translate(${ox.toFixed(1)},${oy.toFixed(1)})`);
+  ROW_DIV.forEach(e=>{e.style.translate=`${ox.toFixed(1)}px ${oy.toFixed(1)}px`;});
+  const ap=(e,a,b)=>{const q=pr(t,a,b);e.style.opacity=q;return q;};
+  [dLLM,user,userLbl].forEach(e=>ap(e,T,T+.5));
+  /* B: the tool, the context and the frame grow in */
+  const gT=pr(t,B0+.6,B0+1.2,eio);tool.style.opacity=gT;tool.style.transform=`scale(${(.85+.15*gT).toFixed(3)})`;
+  ap(ctxHead,B0+.8,B0+1.3);ap(aug,B0+1.3,B0+1.9);ap(augLbl,B0+1.5,B0+2.0);
+  /* legs of the dot: [start, end, track, from, to]; the last two are the LLM alone (A) */
+  const LEG=[[R,R+.8,tPrompt,[UX[1],UP],[FX[0],UP]],[R+1.2,R+2.0,tReq,[FX[1],UP],[TX2[0],UP]],
+             [R+2.9,R+3.7,tRes,[TX2[0],DN],[FX[1],DN]],[R+4.1,R+4.9,tText,[FX[0],DN],[UX[1],DN]],
+             [T+.8,T+1.6,tPrompt,[UX[1],UP],[FX[0],UP]],[T+2.2,T+3.0,tText,[FX[0],DN],[UX[1],DN]]];
+  const leg=LEG.find(l=>t>=l[0]&&t<l[1]+.25);
+  const kA=1-pr(t,B0,B0+.5);   /* the LLM alone's arrows clear as B begins, and draw again in B's turn */
+  const drawn=(i,j)=>Math.max(pr(t,LEG[i][0],LEG[i][1]),j==null?0:pr(t,LEG[j][0],LEG[j][1])*kA);
+  [[tPrompt,0,4],[tReq,1],[tRes,2],[tText,3,5]].forEach(([p,i,j])=>drawP(p,drawn(i,j),leg&&leg[2]===p));
+  dot.style.opacity=0;   /* the arrows light up as they draw; no travelling dot */
+  lPrompt.style.opacity=Math.max(pr(t,LEG[4][0],LEG[4][0]+.4)*kA,pr(t,LEG[0][0],LEG[0][0]+.4));ap(lReq,LEG[1][0],LEG[1][0]+.4);ap(lRes,LEG[2][0],LEG[2][0]+.4);lText.style.opacity=Math.max(pr(t,LEG[5][0],LEG[5][0]+.4)*kA,pr(t,LEG[3][0],LEG[3][0]+.4));
+  /* what lands in the context, and when */
+  const land=[B0+1.0,LEG[0][1],LEG[1][0]+.1,LEG[2][1],LEG[3][0]+.1];
+  const grow=CB.reduce((h,b,i)=>h+BSTEP*pr(t,land[i],land[i]+.4,eio),0);
+  CB.forEach((b,i)=>{const q=pr(t,land[i],land[i]+.4,eio);
+    css(b.e,{height:px(BH*q),opacity:q>0?Math.min(1,q*2):0,visibility:q>0?"visible":"hidden",
+      boxShadow:q>0&&t<land[i]+1.2?`0 0 0 3px ${COL[b.c==="base"?"acc":b.c].hex}33`:"none"});});
+  const cy1=Math.max(KY0+340,BY0+grow+ptDefH(t)+14);   /* full height from the start: the arrow below keeps its length */
+  /* the context is a plain box that grows as entries land */
+  const rr=16;cl.setAttribute("d",`M${KX0+rr},${KY0} H${KX1-rr} Q${KX1},${KY0} ${KX1},${KY0+rr} V${cy1-rr} Q${KX1},${cy1} ${KX1-rr},${cy1} H${KX0+rr} Q${KX0},${cy1} ${KX0},${cy1-rr} V${KY0+rr} Q${KX0},${KY0} ${KX0+rr},${KY0} Z`);
+  /* each call: the whole context lights up and goes down to the LLM */
+  const call1=LEG[0][1]+.3, call2=LEG[2][1]+.3;
+  const g=c=>pr(t,c,c+.3)*(1-pr(t,c+.9,c+1.3)), glow=Math.max(g(call1),g(call2));
+  cl.setAttribute("stroke",glow>.05?"#1C5BB5":"#A9C4EA");cl.setAttribute("stroke-width",(2+2*glow).toFixed(2));
+  cl.style.opacity=pr(t,B0+.7,B0+1.2);cl.setAttribute("fill","#F7FAFE");
+  /* on each call the whole context goes down to the LLM */
+  aCtx.setAttribute("d",dOf(shorten([[960,cy1+AGAP],[960,650-AGAP+6]],6)));aCtx._L=null;
+  drawP(aCtx,pr(t,B0+1.0,B0+1.4),glow>.05);
+  css(sentLbl,{top:px((cy1+650)/2-10)});ap(sentLbl,call1+.1,call1+.5);
+  const pulse=Math.max(g(call1+.2),g(call2+.2));
+  dLLM.style.boxShadow=`0 0 0 ${(6*pulse).toFixed(1)}px rgba(28,91,181,.18)`;
+  ap(keep,call2+.3,call2+.8);
+  /* the tool runs while the dot waits there */
+  const tp=pr(t,LEG[1][1],LEG[1][1]+.2)*(1-pr(t,LEG[2][0],LEG[2][0]+.2));
+  tool.style.boxShadow=`0 0 0 ${(6*tp).toFixed(1)}px rgba(28,91,181,.18)`;tool.style.borderColor=tp>.05?"#1C5BB5":"#A9C4EA";
+  /* the user: the text arrives; the next step waits for the next prompt */
+  const uf=l=>pr(t,l[1],l[1]+.2)*(1-pr(t,l[1]+.8,l[1]+1.2)), ua=Math.max(uf(LEG[3]),uf(LEG[5]));
+  user.style.boxShadow=`0 0 0 ${(6*ua).toFixed(1)}px rgba(28,91,181,.18)`;
+  nextNote.style.opacity=0;   /* said aloud, not written */
+  renderPT(t);
+}
+
+/* ===== Layer 2 in detail: the Agent Harness.
+   HS0 · Anthropic's definition, "act as an agent" in blue.
+   HS1 · the Augmented LLM picture again, now inside the Agent Harness: the user prompts once; the LLM keeps calling
+         tools on its own, three rounds, every request and result joining the context; when it calls no more tools,
+         the final answer goes back to the user. The loop, not the user, drives the next step. ===== */
+const FLOW_DX=-50;   /* the flow pictures (User … Tools) sit centred on the stage */
+const h1=el("div","abs",S);css(h1,{left:"0",top:"0",width:"1920px",height:"1080px",translate:`${FLOW_DX}px 0px`});
+const h1svg=document.createElementNS(NS,"svg");h1svg.setAttribute("width",1920);h1svg.setAttribute("height",1080);
+css(h1svg,{position:"absolute",left:"0",top:"0",overflow:"visible"});h1.appendChild(h1svg);
+h1svg.innerHTML=`<defs><marker id="hh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1,1 L8,5 L1,9" fill="none" stroke="#98A3B0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="hhA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1,1 L8,5 L1,9" fill="none" stroke="#1C5BB5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>`;
+function hArrow(pts){const p=document.createElementNS(NS,"path");p.setAttribute("d",dOf(shorten(pts,6)));p.setAttribute("fill","none");
+  p.setAttribute("stroke","#98A3B0");p.setAttribute("stroke-width","2.2");p.setAttribute("stroke-linejoin","round");h1svg.appendChild(p);return p;}
+function hDraw(p,q,hot){if(p._L==null)p._L=p.getTotalLength();
+  p.setAttribute("stroke-dasharray",p._L);p.setAttribute("stroke-dashoffset",p._L*(1-q));p.style.opacity=q>0?1:0;
+  p.setAttribute("stroke",hot?"#1C5BB5":"#98A3B0");p.setAttribute("stroke-width",hot?"3":"2.2");
+  p.setAttribute("marker-end",q>.97?(hot?"url(#hhA)":"url(#hh)"):"none");}
+const hBox=(x,y,w,h,html,cls="dbox")=>{const e=el("div",cls,h1,html);css(e,{left:px(x),top:px(y),width:px(w),height:px(h)});return e;};
+const hLbl=(txt,x,y,cls="dhd",align="center")=>{const e=el("div","abs "+cls,h1,txt);css(e,{left:px(x),top:px(y),transform:align==="center"?"translateX(-50%)":"none",textAlign:align,whiteSpace:"nowrap"});return e;};
+/* the definition */
+const hDef=el("div","abs hdef",h1,`An agent harness (or scaffold) is the system that enables a model to <b>act as an agent</b>: it processes inputs, orchestrates tool calls, and returns results.<div class="hsrc">Anthropic · Demystifying Evals for AI Agents</div>`);
+css(hDef,{left:"310px",top:"360px",width:"1300px"});
+/* the loop: same places as the Augmented LLM page */
+const HUX=[300,380], HFX=[860,1060], HTX=[1440,1680], HMY=720, HUP=HMY-25, HDN=HMY+25, HG=14;
+const HKX0=740, HKX1=1180, HKY0=80, HBX=760, HBW=400, HBY0=158, HBH=34, HBS=40;
+const hFrame=hBox(700,62,1020,800,"","augf");
+const hFrameLbl=hLbl("Agent Harness",726,50,"auglbl","left");
+const hCtxHead=hLbl(`<span style="font:700 20px var(--body);color:var(--fg)">Context</span> <span style="font:500 18px var(--body);color:var(--muted)">· The LLM's Memory</span><div style="font:500 13px var(--body);color:var(--muted);margin-top:2px">Saved as session.jsonl · one file per conversation</div>`,762,94,"","left");
+const hCtx=document.createElementNS(NS,"path");hCtx.setAttribute("fill","#F7FAFE");hCtx.setAttribute("stroke","#A9C4EA");hCtx.setAttribute("stroke-width","2");h1svg.insertBefore(hCtx,h1svg.firstChild.nextSibling);
+const HCB=[["System Prompt","first, on every call","base"],["Tool Definitions","Skill · Bash · Read · Edit · Write","base"],["Prompt","from the user","base"],
+  ["Tool Call Request 1","Read","teal"],["Tool Result 1","","teal"],["Tool Call Request 2","Write","teal"],["Tool Result 2","","teal"],
+  ["Tool Call Request 3","Edit","teal"],["Tool Result 3","","teal"],["Final Answer","to the user","llm"]]
+  .map(([l,sb,c])=>{const k=COL[c];const e=el("div","blk",h1,`<div class="bt"><span>${l}</span><span class="sub">${sb}</span></div>`);
+    css(e,{left:px(HBX),top:"0px",width:px(HBW),background:k.bg,borderColor:k.st,color:k.t});return {e,c};});
+const hLLM=hBox(HFX[0],650,HFX[1]-HFX[0],140,`<div class="dc"><span style="font:700 34px var(--display)">LLM</span></div>`,"dbox dllm");
+const ROUND_TOOL=["Read","Write","Edit"];      /* the tool each round of the loop calls */
+const hTool=hBox(HTX[0],620,HTX[1]-HTX[0],200,`<div class="tbh">Tools</div><div class="tbs">Core Tools</div>
+  <div class="tchips">${["Skill","Bash","Read","Edit","Write"].map(n=>`<span class="tchip" data-n="${n}">${n}</span>`).join("")}</div>`);
+const tchips=[...hTool.querySelectorAll(".tchip")];
+const hUser=hBox(HUX[0],HMY-40,80,80,USR,"duser");
+const hUserLbl=hLbl("User",340,HMY+52,"dsub");
+const htPrompt=hArrow([[HUX[1]+HG,HUP],[HFX[0]-HG+6,HUP]]), htFinal=hArrow([[HFX[0]-HG,HDN],[HUX[1]+HG-6,HDN]]);
+/* LLM ⇄ Tools as one loop: the request arcs over the top, the result comes back underneath */
+function hCurve(d){const p=document.createElementNS(NS,"path");p.setAttribute("d",d);p.setAttribute("fill","none");
+  p.setAttribute("stroke","#98A3B0");p.setAttribute("stroke-width","2.2");h1svg.appendChild(p);return p;}
+const LX0=HFX[1]+HG, LX1=HTX[0]-HG, LMX=(LX0+LX1)/2;
+const htReq=hCurve(`M${LX0},${HMY-20} Q${LMX},${HMY-150} ${LX1-4},${HMY-20}`);
+const htRes=hCurve(`M${LX1},${HMY+20} Q${LMX},${HMY+150} ${LX0+4},${HMY+20}`);
+const hCtxA=hArrow([[960,560],[960,650-HG+6]]);
+const hlPrompt=hLbl("Prompt",530,HUP-30), hlFinal=hLbl("Final Answer",530,HDN+8);
+const hlReq=hLbl(`Tool Call Request <span class="hn"></span>`,LMX,HMY-131), hlRes=hLbl("Result",LMX,HMY+96);
+const hnTag=hlReq.querySelector(".hn");
+const hLoop=hLbl(`<b>Agent Loop</b><div>until no more tool calls</div>`,LMX,HMY-22,"hloop");
+const hSent=hLbl("Sent in full, every call",942,0,"dhd","left");
+/* the gate on the request arc: Hooks first, then Permissions (shown once, on the Edit call) */
+const hGate=el("div","abs hgate",h1,`<span class="hg" data-g="0">Permissions</span>`);   /* hooks come with the Customization page */
+const hGs=[...hGate.querySelectorAll(".hg")];hSent.style.transform="translateX(-100%)";
+
+/* Core Tools: the Tools box opens into the list (official one-line descriptions, Claude Agent SDK docs) */
+const CT_USED=[["Skill","Executes a skill within the main conversation"],["Bash","Executes shell commands in your environment"],
+  ["Read","Reads the contents of files"],["Edit","Makes targeted edits to specific files"],["Write","Creates or overwrites files"]];
+const CT_IDLE=[["Glob","Finds files based on pattern matching"],["Grep","Searches for patterns in file contents"],
+  ["Agent","Spawns a subagent with its own context window to handle a task"]];
+const CTP={x:260,y:220,w:1400,h:480};
+const hPanel=el("div","abs ctp",h1,`<div class="ctph">Tools</div>
+  <div class="ctcol" style="left:40px;top:96px;width:620px"><div class="ctsec">Core Tools · Used in RiskMind</div>${CT_USED.map(([n,d])=>`<div class="ctr"><span class="ctn">${n}</span><span class="ctd">${d}</span></div>`).join("")}</div>
+  <div class="ctcol" style="left:700px;top:96px;width:660px"><div class="ctsec">Core Tools · Available, Not Used</div>${CT_IDLE.map(([n,d,tg])=>`<div class="ctr idle"><span class="ctn">${n}</span><span class="ctd">${d}${tg?` <span class="cttg">${tg}</span>`:""}</span></div>`).join("")}
+    <div class="ctsec ctslot">MCP</div><div class="ctr mcp"><span class="ctn">MCP</span><span class="ctd">Tools from external systems <span class="cttg">Session 3</span></span></div></div>`);
+/* Context labels: the system prompt goes first on every call; the whole conversation is kept as one session file */
+const hSysA=hArrow([[1194,175],[1232,175]]);
+const hSysL=hLbl(`<b>System Prompt</b> · first, on every call`,1244,163,"ctxl","left");
+const hSessA=hArrow([[1194,380],[1252,380]]);
+const hSess=hBox(1262,336,64,88,`${docSvg("JSON",56)}`,"sessf");
+const hSessL=hLbl(`<b>Memory</b><div>session.jsonl · one file per conversation</div>`,1342,354,"ctxl","left");
+const ctRows=[...hPanel.querySelectorAll(".ctr")], ctSecs=[...hPanel.querySelectorAll(".ctsec")], ctHead=hPanel.querySelector(".ctph");
+function renderH1(t){
+  const on=t>=HD.z0&&t<HD.back+.6;
+  h1.style.display=on?"":"none";if(!on)return;
+  h1.style.opacity=pr(t,HD.z0+.5,HD.z0+1.0)*(1-pr(t,HD.back,HD.back+.5));
+  const T=HD.z0+.7, ap=(e,a,b,k=1)=>{const q=pr(t,a,b)*k;e.style.opacity=q;return q;};
+  /* the definition, then it gives way to the loop */
+  hDef.style.display="none";   /* the definition now sits in the Harness intro */
+  const B=HD.s0+.4;
+  [hUser,hUserLbl,hLLM,hTool,hCtxHead].forEach(e=>ap(e,B,B+.6));
+  ap(hFrame,B+.5,B+1.1);ap(hFrameLbl,B+.7,B+1.2);
+  /* legs: prompt, then three rounds of request/result, then the final answer */
+  const R=HD.s0+1.4, RD=2.2;
+  const req=k=>R+1.2+k*RD, go=k=>req(k)+(k===2?HD.GD:0), res=k=>go(k)+1.1, fin=res(2)+1.6;   /* go: when the request leaves (round 3 waits at the gate) */
+  const LEG=[[R,R+.8,htPrompt],[fin,fin+.8,htFinal]];
+  for(let k=0;k<3;k++)LEG.push([go(k),go(k)+.7,htReq],[res(k),res(k)+.7,htRes]);
+  const legOn=p=>LEG.some(([a,b,q])=>q===p&&t>=a&&t<b+.25);
+  const first=p=>LEG.filter(l=>l[2]===p)[0];
+  [htPrompt,htFinal,htReq,htRes].forEach(p=>{const f=first(p);hDraw(p,pr(t,f[0],f[1]),legOn(p));});
+  ap(hlPrompt,R,R+.4);ap(hlReq,go(0),go(0)+.4);ap(hlRes,res(0),res(0)+.4);ap(hlFinal,fin,fin+.4);
+  const kNow=[2,1,0].find(k=>t>=req(k));hnTag.textContent=kNow==null?"":`· ${ROUND_TOOL[kNow]}`;
+  /* the tool this round calls lights up in the Tools box while the request goes out and the result comes back */
+  tchips.forEach(c=>{const k=ROUND_TOOL.indexOf(c.dataset.n);const on=k>=0&&t>=req(k)&&t<res(k)+.7;
+    css(c,{borderColor:on?"#1C5BB5":"var(--line)",color:on?"#1C5BB5":"var(--fg)",background:on?"#EAF2FE":"#fff"});});
+  ap(hLoop,req(1),req(1)+.5);
+  /* the context: entries land as each leg arrives */
+  const land=[B+.6,B+.8,R+.8,req(0)+.1,res(0)+.7,req(1)+.1,res(1)+.7,req(2)+.1,res(2)+.7,fin+.1];   /* the tool definitions come in with the system prompt */
+  let grow=0;
+  HCB.forEach((b,i)=>{const q=pr(t,land[i],land[i]+.4,eio);grow+=HBS*q;
+    css(b.e,{top:px(HBY0+i*HBS),height:px(HBH*q),opacity:q>0?Math.min(1,q*2):0,visibility:q>0?"visible":"hidden",
+      boxShadow:q>0&&t<land[i]+1.2?`0 0 0 3px ${COL[b.c==="base"?"acc":b.c].hex}33`:"none"});});
+  const cy1=HBY0+HCB.length*HBS+10, rr=16;
+  hCtx.setAttribute("d",`M${HKX0+rr},${HKY0} H${HKX1-rr} Q${HKX1},${HKY0} ${HKX1},${HKY0+rr} V${cy1-rr} Q${HKX1},${cy1} ${HKX1-rr},${cy1} H${HKX0+rr} Q${HKX0},${cy1} ${HKX0},${cy1-rr} V${HKY0+rr} Q${HKX0},${HKY0} ${HKX0+rr},${HKY0} Z`);
+  hCtx.style.opacity=pr(t,B,B+.6);
+  /* each call: the whole context goes down to the LLM */
+  const calls=[R+.9,res(0)+.8,res(1)+.8,res(2)+.8];
+  const g=c=>pr(t,c,c+.3)*(1-pr(t,c+.9,c+1.3)), glow=Math.max(...calls.map(g));
+  hCtx.setAttribute("stroke",glow>.05?"#1C5BB5":"#A9C4EA");hCtx.setAttribute("stroke-width",(2+2*glow).toFixed(2));
+  hCtxA.setAttribute("d",dOf(shorten([[960,cy1+HG],[960,650-HG+6]],6)));hCtxA._L=null;
+  hDraw(hCtxA,pr(t,B+.8,B+1.2),glow>.05);
+  css(hSent,{top:px((cy1+650)/2-10)});ap(hSent,calls[0]+.1,calls[0]+.5);
+  hLLM.style.boxShadow=`0 0 0 ${(6*Math.max(...calls.map(c=>g(c+.2)))).toFixed(1)}px rgba(28,91,181,.18)`;
+  const tp=Math.max(...[0,1,2].map(k=>pr(t,go(k)+.7,go(k)+.9)*(1-pr(t,res(k),res(k)+.2))));
+  hTool.style.boxShadow=`0 0 0 ${(6*tp).toFixed(1)}px rgba(28,91,181,.18)`;hTool.style.borderColor=tp>.05?"#1C5BB5":"#A9C4EA";
+  const ua=pr(t,fin+.8,fin+1.0)*(1-pr(t,fin+1.6,fin+2.0));
+  hUser.style.boxShadow=`0 0 0 ${(6*ua).toFixed(1)}px rgba(28,91,181,.18)`;
+  hPanel.style.display="none";   /* the five Core Tools now sit in the Tools box itself */
+  /* the gate: appears as the Edit request is written, checks Hooks then Permissions, lets it through, then goes */
+  const G0=req(2);
+  css(hGate,{left:px(LMX),top:px(HMY-85),opacity:pr(t,G0+.1,G0+.4)*(1-pr(t,res(2),res(2)+.5))});
+  hGs.forEach((g,i)=>{const ok=t>=G0+.8;g.classList.toggle("ok",ok);});
+  [hSysA,hSessA].forEach(p=>p.style.opacity=0);[hSysL,hSess,hSessL].forEach(e=>e.style.display="none");   /* the labels now sit inside the Context box */
+}
+
+/* ===== The ending: after the dashboard, the Plugin dot rises back into the ball.
+   EA · the innermost ring in RBC yellow: RBC Assist Pro, today (an Augmented LLM, no domain expertise).
+   EB · the second ring joins it: the inner two make a Standardized Agent, the horizontal part (legend).
+   EC · the outer two in blue, our work: RiskMind, the vertical part (legend). Stop.
+   ED … EE · decoupled: under the LLM and the harness, what fills them changes (models, SDKs); the vertical part stays. ===== */
+const EF=INTRO+runExt(DURATION);   /* the dashboard has scrolled to its end */
+const EG={s:.86, cx:810, cy:430};  /* the ball in the ending: scale and centre */
+const EA=EF+2.6, EB=EA+2.0, EC=EB+1.4, ED=EC+.1, EE=ED+5.0;
+/* what can fill the horizontal part: each list cycles under its ring, on its own beat; first, then the switches */
+const ESUB=[{items:["Claude Sonnet 4.6","Claude Sonnet 5.5","GPT-6.1 Sol"],at:[ED+1.4,ED+2.7]},
+            {items:["Claude Agent SDK","OpenAI Codex SDK","Pi"],at:[ED+1.9,ED+3.3]}];
+const YEL={fill:"#FCF5DA", st:"#DDBB4C"}, BLU={fill:"#DFEBFC", st:"#1C5BB5"};
+const eWrap=el("div","abs",S);css(eWrap,{left:"0",top:"0",width:"0",height:"0",transformOrigin:"0 0"});
+const eSvg=document.createElementNS(NS,"svg");eSvg.setAttribute("width",1);eSvg.setAttribute("height",1);
+css(eSvg,{position:"absolute",left:"0",top:"0",overflow:"visible"});eWrap.appendChild(eSvg);
+const eCirc=r=>`M${-r},0 a${r},${r} 0 1 0 ${2*r},0 a${r},${r} 0 1 0 ${-2*r},0 Z`;
+const eRings=LY.R.map((R,i)=>{const p=document.createElementNS(NS,"path");p.setAttribute("fill-rule","evenodd");p.setAttribute("stroke-width","2");
+  p.setAttribute("d",i?eCirc(R)+" "+eCirc(LY.R[i-1]):eCirc(R));p.setAttribute("stroke","none");eSvg.appendChild(p);return p;});
+/* each ring's outer edge drawn on its own, so a lit ring keeps its own colour all the way round */
+const eEdges=LY.R.map(R=>{const c=document.createElementNS(NS,"circle");c.setAttribute("r",R);c.setAttribute("fill","none");eSvg.appendChild(c);return c;});
+const eLabs=LAYERS.map((L,i)=>{const e=el("div","abs",eWrap,i?`<div class="rn">${L.name}</div>`:`<div class="rn">Augmented</div><div class="rn">LLM</div>`);
+  css(e,{left:"0",top:px(L.ly-LY.cy+(i===1?14:0)),transform:"translate(-50%,-50%)",textAlign:"center",whiteSpace:"nowrap",lineHeight:i?"":"1.3"});return e;});   /* Agent Harness: no sub line here, so it sits a little lower, like RiskMind Customization */
+/* RBC Assist Pro, today: a leader from the innermost ring out to the right of the ball */
+const eLead=document.createElementNS(NS,"line");eLead.setAttribute("stroke","#1C5BB5");eLead.setAttribute("stroke-width","1.5");eLead.setAttribute("stroke-dasharray","5 5");eSvg.appendChild(eLead);
+const eDot=document.createElementNS(NS,"circle");eDot.setAttribute("r","5");eDot.setAttribute("fill","#1C5BB5");eSvg.appendChild(eDot);
+const eRbc=el("div","abs erbc",S,`RBC Assist Pro<span class="etoday">Today</span>`), eStd=el("div","abs erbc",S,"Standardized Agent");
+/* the legend under the ball */
+const eLeg=el("div","abs eleg",S,`<span class="eli"><i style="background:${YEL.fill};border-color:${YEL.st}"></i><b>Standardized Agent</b><small>Horizontal</small></span><span class="eli"><i style="background:${BLU.fill};border-color:${BLU.st}"></i><b>RiskMind</b><small>Vertical</small></span>`);
+/* under the LLM and the Agent Harness: what fills them now, and what could instead */
+const eSub=ESUB.map(S_=>{const e=el("div","esub",eWrap,S_.items.map(n=>`<span>${n}</span>`).join(""));return e;});
+const eLi=[...eLeg.querySelectorAll(".eli")];
+function renderEnd(t){
+  const on=t>=EF;
+  [eWrap,eRbc,eStd,eLeg].forEach(e=>e.style.visibility=on?"visible":"hidden");
+  capwrap.style.opacity=on?1-pr(t,EF,EF+.6):1;
+  if(!on)return;
+  /* the run's last frame steps back */
+  const fo=pr(t,EF,EF+.6);
+  [chat,art,tracker].forEach(e=>e.style.opacity=(+e.style.opacity||0)*(1-fo));
+  /* the Plugin dot rises into the ball */
+  /* rising as every layer rises from the bar: the same length, the scale growing evenly (geometric), the dot handing over to the rings */
+  const Z=1-pr(t,EF+.4,EF+.4+RISE,eio), g=1-Z, s=EG.s*Math.pow(BAR.dot/(LY.R[3]*EG.s),Z);
+  eSvg.style.opacity=1-pr(Z,.85,1);
+  /* with the tag gone (C), the ball and its legend settle in the middle */
+  const cx=lerp(EG.cx,960,pr(t,EA+.3,EA+.9,eio));   /* once the RBC Assist Pro tag has gone, the ball moves to the middle */
+  css(eWrap,{transform:`translate(${lerp(BAR.x[3],cx,g)}px,${lerp(BAR.y,EG.cy,g)}px) scale(${s})`});
+  barDot.style.opacity=pr(Z,.8,1);
+  const lab=1-pr(Z,0,.35);
+  const yA=pr(t,EF+1.8,EF+2.2), yB=pr(t,EA+.4,EA+.8), bC=pr(t,EB+.4,EB+.8);
+  const mix=(a,b,k)=>{const h=x=>[1,3,5].map(j=>parseInt(x.slice(j,j+2),16));const A=h(a),B=h(b);return`rgb(${A.map((v,j)=>Math.round(lerp(v,B[j],k))).join(",")})`;};
+  /* it rises as every layer does, with the station it rises from (Plugin) lit; that lets go before the inner ring lights */
+  const onP=1-pr(t,EF+1.4,EF+1.8);
+  eRings.forEach((p,i)=>{const k=i===0?yA:i===1?yB:bC, C=i<2?YEL:BLU;   /* horizontal RBC yellow, our vertical part blue (RiskMind's colour); as in Session 1 */
+    const pl=i===3?onP:0, pe=i>=2?onP:0;   /* the Plugin band, and both its edges */
+    p.setAttribute("fill",k>0?mix("#F7FAFE",C.fill,k):mix("#F7FAFE","#EAF2FE",pl));
+    eEdges[i].setAttribute("stroke",k>0?mix("#A9C4EA",C.st,k):mix("#A9C4EA","#1C5BB5",pe));eEdges[i].setAttribute("stroke-width",(2+.5*Math.max(k,pe)).toFixed(2));});
+  eLabs.forEach((e,i)=>{e.style.opacity=lab;[...e.querySelectorAll(".rn")].forEach(n=>n.style.color=(i<2&&(i?yB:yA)>.5)?"#8A6D12":(i===3&&onP>.5)?"#1C5BB5":"var(--fg)");});
+  /* the tag: RBC Assist Pro · Today (from the innermost ring); it draws back, the second ring lights, and
+     Standardized Agent comes out (from the middle of the second band); it draws back before the outer rings light */
+  const x1=LY.R[3]+48, lp1=pr(t,EF+2.0,EF+2.4,eio)*(1-pr(t,EA+.1,EA+.4,eio)), lp2=0;   /* no tag for the Standardized Agent: the legend names it */
+  const two=t>=EA+.6, x0=two?(LY.R[0]+LY.R[1])/2:LY.R[0], lp=two?lp2:lp1;
+  eLead.setAttribute("x1",x0);eLead.setAttribute("x2",lerp(x0,x1,lp));eLead.setAttribute("y1",0);eLead.setAttribute("y2",0);
+  eLead.style.opacity=eDot.style.opacity=lp>.01?1:0;eDot.setAttribute("cx",x0);eDot.setAttribute("cy",0);
+  const rq1=pr(t,EF+2.2,EF+2.6)*(1-pr(t,EA,EA+.25)), rq2=0;
+  [[eRbc,rq1],[eStd,rq2]].forEach(([e,q])=>css(e,{left:px(EG.cx+(x1+14)*EG.s),top:px(EG.cy),opacity:q,transform:`translate(${(1-q)*-8}px,-50%)`}));
+  /* decoupled: a line under the LLM and under the harness, both at once; then each changes on its own beat,
+     while the blue rings stay as they are */
+  const sIn=pr(t,ED,ED+.5,eio)*(1-pr(t,ED+4.3,ED+4.8,eio)), lift=15*sIn;   /* after the last change the lines go and the names settle back in the middle */
+  eLabs.forEach((e,i)=>{if(i<2)e.style.top=px(LAYERS[i].ly-LY.cy+(i===1?14:0)-lift);});
+  eSub.forEach((e,i)=>{const lb=eLabs[i], y=LAYERS[i].ly-LY.cy+(i===1?14:0)-lift+lb.offsetHeight/2+4;
+    css(e,{top:px(y),opacity:sIn});
+    const pos=ESUB[i].at.reduce((a,c)=>a+pr(t,c,c+.45,eio),0);
+    [...e.children].forEach((c,k)=>{const d=k-pos;css(c,{top:px(d*26),opacity:Math.max(0,1-Math.abs(d)*1.4)});});});
+  /* the legend: Standardized Agent, then RiskMind beside it (the pair stays centred under the ball) */
+  css(eLeg,{left:px(cx),top:px(EG.cy+LY.R[3]*EG.s+54)});
+  const l1=pr(t,EA+1.4,EA+1.8), l2=pr(t,EB+.8,EB+1.2);
+  css(eLi[0],{opacity:l1});css(eLi[1],{opacity:l2,maxWidth:px(320*pr(t,EB+.6,EB+1.0,eio)),marginLeft:px(40*pr(t,EB+.6,EB+1.0,eio))});
+}
+
+/* ---------- render ---------- */
+function curTurn(t){let c=null;for(const T of TURNS)if(t>=T.t0)c=T;return t>=END_T?null:c;}
+function lightPath(k,p,color){
+  const h=hot[k];const L=h.getTotalLength();
+  h.setAttribute("stroke",COL[color].hex);h.setAttribute("marker-end",p>.97?`url(#ah-${color})`:"none");
+  css(h,{strokeDasharray:L,strokeDashoffset:L*(1-p),opacity:p>0?1:0});
+}
+function nodeStyle(n,c,glow){
+  if(!c) css(n,{background:"var(--node-bg)",borderColor:"transparent",boxShadow:"none"});
+  else css(n,{background:COL[c].bg,borderColor:COL[c].st,boxShadow:glow?`0 0 0 ${glow}px ${COL[c].hex}22`:"none"});
+}
+function setCap(box,k,txt,kc,op,dy){box.children[0].textContent=k;box.children[0].style.color=kc;box.children[1].textContent=txt;css(box,{opacity:op,transform:`translateY(${dy}px)`,borderLeftColor:kc});}
+
+const END_T0=60, END_H=890;   /* the end frame's chat and dashboard: up into the tracker's place, stopping short of the progress bar */
+function renderRun(t){
+  const T=curTurn(t), u=T?t-T.t0:t;
+  const ending=pr(t,END_T,END_T+2.4,eio);
+  const scene0=t<TURNS[0].t0;
+
+  /* lanes fade for end frame */
+  const lf=(1-clamp(ending*1.8))*pr(t,-.9,0);   // lanes appear as the layers open (t<0 is the layers scene)
+  tracker.style.opacity=pr(t,-.6,.4)*(1-pr(t,END_T,END_T+.8));   /* on the dashboard the progress bar at the bottom takes over */
+  [laneC,laneA,laneR].forEach(l=>{l.style.opacity=lf;l.style.visibility=lf<=.001?"hidden":"visible";});
+
+  /* diagram build-in (scene 0) */
+  const dIn=pr(t,-.6,.4);
+  [loopbox,loopLbl,evalN,toolN,finN,promptN].forEach(e=>e.style.opacity=dIn);
+  Object.values(base).forEach(p=>p.style.opacity=dIn);
+  Object.values(lbl).forEach(p=>p.style.opacity=dIn);
+
+  /* prompt (scene 0) */
+  nodeStyle(promptN, scene0&&t>=4.0?"acc":null, scene0&&t>=4.0?3:0);
+  promptN.children[1].style.opacity=.25+.75*pr(t,4.0,4.6);
+  schedTag.style.opacity=pr(t,4.4,5.0);
+  lightPath("prompt",scene0?pr(t,4.8,5.8,eio):0,"acc");
+
+  /* LLM node */
+  let evalGlow=0, evalC=null;
+  if(scene0&&t>=5.8){evalC="acc";evalGlow=4;}
+  if(T){
+    if(u>=.3&&u<1.8){evalC="acc";evalGlow=4+5*(.5+.5*Math.sin((u-.3)*Math.PI*2.2));}
+    else if(T.tool&&u>=TM.res1-.3&&u<TM.res1+.8){evalC="acc";evalGlow=3+3*(1-pr(u,TM.res1-.3,TM.res1+.8));}   // result arrives
+  }
+  nodeStyle(evalN,evalC,evalGlow);
+  if(!T){decT.textContent=t>=END_T?"Done":"Reading the prompt…";decideBox.style.opacity=scene0?pr(t,5.8,6.4):1;}
+  else{const full=T.decide,k=Math.round(full.length*pr(u,.35,1.4,x=>x));decT.textContent=full.slice(0,k)+(k<full.length?"▍":"");decideBox.style.opacity=1;}
+
+  /* tool node + chips */
+  const tc=T&&T.tool?TOOLCOL[T.tool]:null;
+  const toolOn=tc&&u>=TM.on;
+  const pulse=(toolOn&&u>=TM.run0&&u<TM.run1)?.5+.5*Math.sin((u-TM.run0)*7):0;   // executing
+  nodeStyle(toolN,toolOn?tc:null,toolOn?3+4*pulse:0);
+  for(const n in chips){
+    const c=chips[n].el, on=T&&T.tool===n&&u>=TM.on;
+    if(on){const k=COL[TOOLCOL[n]];css(c,{background:"#fff",borderColor:k.st,borderWidth:"2.5px",color:k.t,transform:`scale(${1.1+pulse*.05})`,boxShadow:`0 6px 16px -8px ${k.hex}`,opacity:1});}
+    else css(c,{background:"#fff",borderColor:"var(--line)",borderWidth:"1.5px",color:"var(--muted)",transform:"scale(1)",boxShadow:"none",opacity:scene0?.55:1});
+  }
+
+  if(toolOn){const k=COL[tc],a=pr(u,TM.on,TM.on+.5);callTxt.innerHTML=esc(T.call);css(callTxt,{opacity:a,color:k.t,borderColor:k.st,transform:`translateY(${(1-a)*6}px)`});}
+  else callTxt.style.opacity=0;
+
+  /* loop paths */
+  if(T&&T.tool){lightPath("calls",pr(u,TM.call0,TM.call1-.3,eio),tc);lightPath("result",pr(u,TM.res0,TM.res1-.5,eio),tc);}
+  else{lightPath("calls",0,"acc");lightPath("result",0,"acc");}
+  lightPath("exit",T&&T.final?pr(u,2.0,2.9,eio):0,"done");
+  const lblOn=(k,on,c)=>css(lbl[k],{color:on?COL[c].hex:"var(--muted)",fontWeight:on?"600":"500"});
+  lblOn("calls",T&&T.tool&&u>=TM.call0,tc);
+  {const b=T&&T.tool==="Bash";hookB.style.opacity=b?pr(u,TM.call0+.3,TM.call0+.6)*(1-pr(u,TM.res1,TM.res1+.4)):0;}
+  lblOn("result",T&&T.tool&&u>=TM.res0,tc);
+  lblOn("exit",T&&T.final&&u>=2.0,"done");
+  const finOn=(T&&T.final&&u>=2.7)||t>=END_T;
+  nodeStyle(finN,finOn?"done":null,finOn?4:0);
+  finN.style.color=finOn?"var(--done-t)":"var(--fg)";
+
+  /* this-turn card: removed (the call now rides the loop) */
+  card.style.display="none";
+  cr1.style.display=cr2.style.display=(T&&T.tool)?"flex":"none";
+  if(!T){cr3.style.opacity=scene0?pr(t,5.8,6.4):0;cr3.innerHTML="The scheduled prompt enters the loop, and the LLM starts deciding.";}
+  else if(T.final){cr3.style.opacity=pr(u,1.8,2.4);
+    cr3.innerHTML='<b style="color:var(--fg);font-size:17px">No tool calls.</b> The loop ends and the final answer goes back to chat.';}
+  else{
+    const k=COL[tc];
+    cr1t.innerHTML=`<span class="tag" style="background:${k.bg};color:${k.t};border:1.5px solid ${k.st}">${T.tool}</span> ${esc(T.call)}`;
+    cr2t.innerHTML=`<span style="color:var(--muted)">${esc(T.ret)}</span>`;
+    const a1=pr(u,1.8,2.4),a2=pr(u,3.6,4.2);
+    css(cr1,{opacity:a1,transform:`translateX(${(1-a1)*-12}px)`});
+    css(cr2,{opacity:a2,transform:`translateX(${(1-a2)*-12}px)`});
+    cr3.style.opacity=0;
+  }
+
+  /* thought bubbles: pulse from the LLM into memory just before a block lands */
+  const dB=pr(t,-.2,.6);
+  const nb=blocks.find(b=>b.turn&&t>=b.t0-.6&&t<b.t0+.4);
+  BUBS.forEach((b,i)=>{
+    let bg="#F7FAFE",bc="#A9C4EA",sc=1;
+    if(nb&&!(T&&T.final)){const c=COL[nb.c],q=(t-(nb.t0-.6))/1.0,on=q>i*.22&&q<i*.22+.5;
+      if(on){bg=c.bg;bc=c.st;sc=1.25;}}
+    css(b,{opacity:dB*lf,background:bg,borderColor:bc,transform:`scale(${sc})`});
+  });
+
+  /* context blocks */
+  let sumH=0;
+  blocks.forEach((b,i)=>{
+    const p=pr(t,b.t0,b.t1,eio), h=b.h*p;
+    css(b.e,{top:px(blockTop(i)),height:px(Math.max(0,h)),opacity:p>0?Math.min(1,p*2):0,visibility:p>0?"visible":"hidden"});
+    const isNew=(b.turn&&T&&b.turn===T.n)||(scene0&&b.sched);
+    b.e.style.boxShadow=isNew&&p>0?`0 0 0 3px ${COL[b.c==="base"?"acc":b.c].hex}33`:"none";
+    sumH+=p>0?(h+GAP*p):0;
+  });
+  ctxbar.style.display="none";
+  cloudEl.setAttribute("d",cloudPath(Math.max(CLOUD.y0+CLOUD.minH,STK.y+sumH+30)));
+  cloudSvg.style.opacity=pr(t,-.7,.2);
+
+  /* files: new files fly out of Tool call(s); inputs light up while a script reads them */
+  const anyFile=Object.values(fileAt).some(a=>t>=a);
+  emptyBox.style.opacity=anyFile?0:pr(t,.6,1.4);
+  for(const k in files){
+    const f=files[k],a=fileAt[k];
+    const fromX=TOOL_R[0]-f.cx, fromY=TOOL_R[1]-f.cy;
+    const p=pr(t,a,a+1.0,eio);
+    const dx=fromX*(1-p),dy=fromY*(1-p),sc=.35+.65*p;
+    let op=t>=a?Math.min(1,(t-a)/.15):0;
+    let bc="transparent",bw="2px",sh="none",bg="transparent";
+    if(T&&T.in&&T.in.includes(k)&&u>=TM.on&&u<TM.run1+.3){const g=pr(u,TM.on,TM.on+.4)*(1-pr(u,TM.run1-.1,TM.run1+.3));bc=COL[tc].st;bw="2.5px";bg="#ffffffcc";sh=`0 0 0 ${5*g}px ${COL[tc].hex}22`;}
+    if(T&&T.read){if(k===T.read&&u>=TM.on){bc="var(--neu-st)";bw="2.5px";bg="#fff";sh="0 8px 22px -10px rgba(22,33,43,.5)";}else if(u>=TM.on&&op>0)op*=.35;}
+    if(k==="html"&&t>=SHOW_T){const g=pr(t,SHOW_T,SHOW_T+.7);bc="var(--done-st)";bw="2.5px";bg="var(--done-bg)";sh=`0 0 0 ${5*g}px rgba(26,115,232,.18)`;}
+    css(f.e,{opacity:op,transform:`translate(${dx}px,${dy}px) scale(${sc})`,visibility:op>0?"visible":"hidden",borderColor:bc,borderWidth:bw,boxShadow:sh,background:bg});
+  }
+  /* RiskMind + Plugins: light up as they enter context; the agent picks FX Option at Turn 1;
+     the file a tool uses lights while it runs */
+  const dIn2=pr(t,-.4,0);
+  [...secs,...divs].forEach(e=>e.style.opacity=dIn2);
+  const T1=TURNS[0].t0, sel=pr(t,T1+TM.on,T1+TM.on+.6);
+  const use=T&&USES[T.n]&&u>=TM.on&&u<TM.res1?USES[T.n]:null;
+  const bump=a=>pr(t,a-.3,a+.1)*(1-pr(t,a+1.1,a+1.7));
+  function paint(e,c,g){if(!c||g<=.01){css(e,{borderColor:"var(--line)",background:"#fff",boxShadow:"none"});return;}
+    const k=COL[c];css(e,{borderColor:k.st,background:k.bg,boxShadow:`0 0 0 ${(4*g).toFixed(2)}px ${k.hex}33`});}
+  const gUse=use?pr(u,TM.on,TM.on+.4)*(1-pr(u,TM.res1-.4,TM.res1)):0;
+  const gC=bump(BASE[0].at), gS=bump(BASE[2].at);
+  if(use&&use[0]==="rhtml")paint(RM.rhtml.e,use[1],gUse);else paint(RM.rhtml.e,"acc",gS);
+  if(use&&use[0]==="emit")paint(RM.emit.e,use[1],gUse);else paint(RM.emit.e,null,0);
+  paint(RM.claude.e,"acc",gC);
+  PLUG.forEach(P=>{
+    if(P===FXO&&sel>0){const on=T&&T.n===1&&u<TM.res1;
+      css(P.e,{borderColor:"var(--pur-st)",borderWidth:"2px",background:on?"var(--pur-bg)":"#fff",boxShadow:on?`0 0 0 ${(4*sel).toFixed(2)}px #5B8FD933`:"none",opacity:dIn2});}
+    else{paint(P.e,"acc",gS);css(P.e,{borderWidth:"1.5px",opacity:dIn2*(1-.6*sel)});}
+  });
+  [RM.claude.e,RM.rhtml.e,RM.emit.e].forEach(e=>e.style.opacity=dIn2);
+  const openP=pr(t,T1+TM.on+.2,T1+TM.on+1.0,eio);
+  css(tree,{height:px(TREE_H*openP),opacity:openP>0?1:0,visibility:openP>0?"visible":"hidden",padding:openP>.15?"10px 12px":"0 12px"});
+  css(treeLink,{height:px((SEC.tree-FXO.y-FXO.h)*openP)});
+  for(const k in SC){const on=use&&use[0]===k;
+    if(on){const c=COL[use[1]];css(SC[k],{borderColor:c.st,background:c.bg,color:c.t,boxShadow:`0 0 0 ${(4*gUse).toFixed(2)}px ${c.hex}33`});}
+    else css(SC[k],{borderColor:"var(--line)",background:"#fff",color:"var(--fg)",boxShadow:"none"});}
+
+  css(reportNote,{left:px(IX+IW),top:px(files.html.y+DOC.h+8),transform:"translateX(-100%)",whiteSpace:"nowrap",opacity:pr(t,SHOW_T+.3,SHOW_T+1.0)});
+
+  /* after a tool runs, its output splits three ways:
+       file → flies to Files on disk · result → lights "tool result" back to the LLM · memory → a block lands in the cloud */
+
+  /* bottom band: caption + tracker */
+  let kTxt,cTxt,kCol,ct0;
+  if(t>=END_T){kTxt="Done";cTxt="Chat on the left, the dashboard on the right";kCol="#1A73E8";ct0=END_T;}
+  else if(scene0&&t<BASE[3].at){kTxt="Start · Before the Prompt";cTxt="CLAUDE.md, the tool definitions, and every skill's name and description load first";kCol="#1C5BB5";ct0=.4;}
+  else if(scene0){kTxt="Start · Scheduled Prompt";cTxt="Same as a normal chat. Only the prompt is generated in the background.";kCol="#1C5BB5";ct0=BASE[3].at;}
+  else{kTxt=`Turn ${T.n} of ${NT} · ${T.tool||"No Tool Calls"}`;cTxt=T.cap;kCol=T.tool?COL[tc].hex:"#1A73E8";ct0=T.t0;}
+  const cp=pr(t,ct0,ct0+.6), closingP=pr(t,END_T+4.5,END_T+5.3);
+  setCap(capA,kTxt,cTxt,kCol,cp*(1-closingP),(1-cp)*14-closingP*14);
+  setCap(capB,"The Idea to Remember",CFG.closing,"#1C5BB5",closingP,(1-closingP)*14);
+
+  const idx=t>=END_T?STEPS.length:scene0?0:T.n;
+  const fillTo=Math.min(idx,STEPS.length-1)-(t>=END_T?0:1)+(scene0?0:pr(u,0,.6));
+  css(trackFill,{width:px(Math.max(0,(TX(clamp(fillTo,0,STEPS.length-1))-TX(0))))});
+  tnodes.forEach((n,i)=>{
+    const s=STEPS[i], sc=s.c?COL[s.c].hex:"#1C5BB5";
+    if(i<idx){n.textContent="✓";css(n,{border:"2px solid var(--done-st)",background:"var(--done-st)",color:"#fff",transform:"scale(1)"});}
+    else if(i===idx){n.textContent=i?String(i):"S";css(n,{border:`2.5px solid ${sc}`,background:"#fff",color:sc,transform:"scale(1.18)"});}
+    else{n.textContent=i?String(i):"S";css(n,{border:"2px dashed #b8c2cb",background:"var(--bg)",color:"#8e9ba6",transform:"scale(1)"});}
+    css(tlabs[i],{color:i===idx?sc:i<idx?"#3d4a56":"#9aa6b1"});
+  });
+
+  /* end frame morph: Context + Agent → chat, Files → dashboard; then scroll the dashboard */
+  if(ending>0){
+    const m=ending;
+    chat.style.visibility=art.style.visibility="visible";
+    css(chat,{left:px(LC.x),top:px(lerp(LANE_T,END_T0,m)),width:px(lerp(LA.x+LA.w-LC.x,600,m)),height:px(lerp(LANE_H,END_H,m)),opacity:clamp(m*3)});
+    css(art,{left:px(lerp(LR.x,680,m)),top:px(lerp(LANE_T,END_T0,m)),width:px(lerp(LR.w,1180,m)),height:px(lerp(LANE_H,END_H,m)),opacity:clamp(m*3)});
+    chatC.style.opacity=pr(t,END_T+1.4,END_T+2.4);
+    artC.style.opacity=pr(t,END_T+1.6,END_T+2.6);
+    const maxScroll=Math.max(0,docin.offsetHeight-doc.clientHeight);
+    docin.style.transform=`translateY(${-maxScroll*pr(t,END_T+3.2,DURATION-.6,eio)}px)`;
+  } else chat.style.visibility=art.style.visibility="hidden";
+}
+
+/* ---------- playback (as in Session 1) ---------- */
+const hud=document.getElementById("hud");
+function fit(){const sc=Math.min(innerWidth/1920,innerHeight/1080), ox=(innerWidth-1920*sc)/2, oy=(innerHeight-1080*sc)/2;
+  S.style.transform=`translate(${ox}px,${oy}px) scale(${sc})`;
+  // the time readout and the buttons stay inside the picture; in full screen the buttons sit in the screen's corner
+  hud.style.left=`${ox+20}px`;hud.style.bottom=`${oy+24}px`;
+  const c=document.getElementById("ctl"), fs=!!document.fullscreenElement;
+  if(c){c.style.right=`${fs?12:ox+18}px`;c.style.bottom=`${fs?10:oy+16}px`;}}
+const EXPORT=new URLSearchParams(location.search).has("export");
+/* the whole file: the four layers (0 … INTRO), then the run (its own clock starts at INTRO) */
+const TOTAL=EE;
+function render(t){renderRun(runInt(t-INTRO));renderIntro(t);renderD0(t);renderH1(t);renderEnd(t);}
+window.renderAt=t=>render(t);
+window.DURATION=TOTAL;
+window.CHAPTERS=[["Start",0],...LAYERS.map((L,i)=>[`Layer: ${L.name}`,LSTOP[i]]),["The LLM alone",DL.sA],["Augmented LLM: two MCP servers",DL.bS],["Augmented LLM: Muni off, one turn",DL.tA],["Agent Harness: as a computer",AN.s],["Agent Harness: the loop",HD.s1],["RiskMind as the application",AP.s],["Run start",INTRO],...TURNS.map(T=>[`Turn ${T.n}: ${T.decide}`,INTRO+runExt(T.t0)]),["End frame",INTRO+runExt(END_T)],["Dashboard, scrolled",EF],["Ending: RBC Assist Pro today",EA],["Ending: Standardized Agent",EB],["Ending: RiskMind",EC],["Ending: decoupled",EE]];
+const STOPS=[0,...LSTOP,DL.sA,DL.bS,DL.tA,AN.s,HD.s1,AP.s,...CHAPTERS.slice(1).map(c=>INTRO+runExt(c)),EF,EA,EB,EC].sort((a,b)=>a-b);   // stops: every layer, the opening, every turn, the end frame
+let T=0,playing=false,last=null;
+function frame(now){if(playing){if(last!=null){let n=T+(now-last)/1000;
+    const stop=STOPS.find(b=>b>T+1e-9);
+    if(stop!=null&&n>=stop){n=stop;playing=false;}
+    T=Math.min(TOTAL,n);}
+  last=now;if(T>=TOTAL)playing=false;}else last=null;
+  render(T);hud.textContent=`${T.toFixed(1)}s / ${TOTAL.toFixed(1)}s ${playing?'▶':'❚❚'}`;requestAnimationFrame(frame);}
+if(EXPORT){document.body.classList.add("export");S.style.transform="none";render(0);}
+else{
+  const toggleFull=()=>{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{});};
+  fit();addEventListener("resize",fit);addEventListener("dblclick",toggleFull);document.addEventListener("fullscreenchange",fit);
+  addEventListener("keydown",e=>{
+    if(e.repeat){if(e.code==="Space")e.preventDefault();return;}      // a held key acts once
+    if(e.code==="Space"){playing=!playing;e.preventDefault();}
+    // → and ← always land on a stop and stay there; while playing, → finishes the current part instead of skipping one
+    if(e.code==="ArrowRight"){T=STOPS.find(b=>b>T+0.01)??TOTAL;playing=false;last=null;}
+    if(e.code==="ArrowLeft"){T=[...STOPS].reverse().find(b=>b<T-0.5)??0;playing=false;last=null;}
+    if(e.code==="Home"){T=0;playing=false;}
+    if(e.code==="KeyF")toggleFull();
+  });
+  // the two buttons, bottom right: play/pause (shows the current state) and full screen (Lucide icons)
+  const ICON={play:'<path d="M6 4l14 8-14 8z"/>',pause:'<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+    full:'<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+    exit:'<path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>'};
+  const bPlay=document.getElementById("bPlay"), bFull=document.getElementById("bFull");
+  const paint=()=>{const pk=playing?"pause":"play", fk=document.fullscreenElement?"exit":"full";
+    if(bPlay.dataset.k!==pk){bPlay.dataset.k=pk;bPlay.innerHTML=`<svg viewBox="0 0 24 24">${ICON[pk]}</svg>`;}
+    if(bFull.dataset.k!==fk){bFull.dataset.k=fk;bFull.innerHTML=`<svg viewBox="0 0 24 24">${ICON[fk]}</svg>`;}
+    requestAnimationFrame(paint);};
+  paint();
+  bPlay.addEventListener("click",e=>{playing=!playing;e.currentTarget.blur();});
+  bFull.addEventListener("click",e=>{toggleFull();e.currentTarget.blur();});   // blur: Space keeps meaning play/pause
+  document.getElementById("ctl").addEventListener("dblclick",e=>e.stopPropagation());
+  requestAnimationFrame(frame);
+}
+</script>
+</body>
+</html>
