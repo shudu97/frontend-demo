@@ -260,198 +260,377 @@ figure.scene { margin: 0 0 14px; } figure.scene img { display: block; width: 100
 .official a { color: var(--accent); }
 
 .diagram { border: 1px solid var(--line); border-radius: 4px; padding: 12px; background: var(--surface); overflow-x: auto; }
+
+/* through-line + reason tags (added 2026-11-17) */
+:root { --exp: #2f6b2a; --exp-soft: #e1f0dc; --ctx: #3b4fa8; --ctx-soft: #e2e7fa; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --exp: #9fd79a; --exp-soft: #1f3320; --ctx: #aab8f2; --ctx-soft: #222a4a; } }
+:root[data-theme="dark"] { --exp: #9fd79a; --exp-soft: #1f3320; --ctx: #aab8f2; --ctx-soft: #222a4a; }
+.tag.exp { background: var(--exp-soft); color: var(--exp); }
+.tag.ctx { background: var(--ctx-soft); color: var(--ctx); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+li > .tag { margin-right: 6px; }
+.thread { border: 1px solid var(--line); border-left: 3px solid var(--fg); background: var(--surface); border-radius: 0 6px 6px 0; padding: 14px 18px; margin-bottom: 16px; }
+.thread .label { margin-top: 0; }
+.thread p { margin: 0 0 8px; }
+pre.code { margin: 0; padding: 12px 14px; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+.flow + .legend { margin-bottom: 4px; }
+.tight { margin: 0; }
 </style>
 
 <div class="wrap">
   <header class="top">
     <h1>Session 3 · Plugin</h1>
-    <p class="lede">How Plugins, Skills, and MCP extend the agent. Slide-by-slide content and presentation format. Two slides are on hold until the skill restructure and the code check are done.</p>
-    <div class="stats"><span class="stat"><b>4</b> slides</span><span class="stat"><b>2</b> drafted</span><span class="stat"><b>2</b> on hold</span></div>
+    <p class="lede">How Plugins, Skills, and MCP extend the agent, and why RiskMind is built as Agent + Plugin. Slide-by-slide content and presentation format. Updated 2026-11-17 from the three real skills (FXO, Muni, IG Canada), the query catalog YAML and the confirmed MCP facts. No time limit yet: everything we want to say goes in first, then we cut.</p>
+    <div class="stats"><span class="stat"><b>9</b> slides</span><span class="stat"><b>7</b> drafted</span><span class="stat"><b>1</b> waiting for details</span><span class="stat"><b>1</b> later</span></div>
   </header>
-
-  
-
-
-
-
 
   <!-- SESSION 3 -->
   <section class="session" id="s3">
-    <div class="session-head"><h2>Plugin</h2><span class="count">4 slides · 2 drafted</span></div>
+    <div class="session-head"><h2>Plugin</h2><span class="count">9 slides · 7 drafted</span></div>
     <p class="session-sub">How Plugins, Skills, and MCP extend the agent.</p>
+
+    <div class="thread">
+      <div class="label">Through-line · the question Sessions 1 and 2 left open</div>
+      <p><b>Why is RiskMind built as Agent + Plugin?</b> Session 1 said RiskMind is Agent + Plugin. Session 2 compared the agent with RBC Assist Pro's augmented LLM and showed half of the context answer in the run, but never said why we chose this design. Session 2's preview hands over the other half: "how much effort does it take to add a new analysis?" (the second question from its beat 3). Session 3 opens with the question, answers it slide by slide, and closes with the answer.</p>
+      <ul>
+        <li><span class="tag exp">Expansion</span> A new analysis is a skill, a script and a query entry. A Risk Manager doesn't need to know how the agent works, how tools are registered, or how an MCP server is developed and hosted. The agent (AI runtime) and the plugins (business knowledge) are separate. RBC Assist Pro separates them too, but through MCP and without skills.</li>
+        <li><span class="tag ctx">Context</span> Download links keep the data out of the context (RBC Assist Pro has no such mechanism, so all data enters the context). Skills load only when used, so no MCP server has to be switched off by hand to cut the tool list (Session 2, beat 4). Progressive disclosure is designed for exactly this.</li>
+      </ul>
+      <p class="legend">Each slide carries the tag(s) of the reason it supports.</p>
+    </div>
+
     <article class="slide">
-      <div class="slide-head"><h3>Plugin Introduction</h3><span class="tag info">Static infographic</span></div>
-      <p class="format">Static infographic with a short zoom-in. Open with the concentric diagram: all four layers drawn, only the outermost layer (Plugin) highlighted and the three inner layers grayed. Then zoom into a folder tree, and the arrows from each skill to the reference files appear one by one.</p>
-      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Plugin: &ldquo;A Claude Code plugin is a directory of skills, agents, hooks, MCP servers, or other components that Claude Code installs and loads as one unit.&rdquo; <a href="https://code.claude.com/docs/en/plugins" target="_blank" rel="noopener">Claude Code plugins overview</a></li><li>When to use one: &ldquo;Use a plugin when you want several skills, subagents, hooks, or MCP servers packaged as one unit.&rdquo; <a href="https://code.claude.com/docs/en/plugins" target="_blank" rel="noopener">Claude Code plugins overview</a></li><li>In the Agent SDK: &ldquo;Package skills, agents, hooks, and MCP servers, and load them by local path&rdquo; <a href="https://code.claude.com/docs/en/agent-sdk/overview" target="_blank" rel="noopener">Agent SDK overview</a></li></ul></div>
+      <div class="slide-head"><h3>Why Agent + Plugin?<span class="subtitle">Opening</span></h3><span class="tags"><span class="tag anim">Short animation</span><span class="tag exp">Expansion</span><span class="tag ctx">Context</span></span></div>
+      <p class="format">Pick up from Session 2's ending: the four rings come back, only the outer ring (Business Plugin) lights up and the inner three gray out. Then the question appears, with the two words underneath that the rest of the session answers.</p>
       <div class="label">Bullets</div>
       <ul>
-        <li>Why we introduce plugins: RiskMind is an Agent + Plugin system. Risk Managers work mainly on the plugin side, and all business context reaches the agent through plugins.</li>
-        
-        <li>What is in a RiskMind plugin
+        <li>Recap in one line: an agent is built in four layers, and the business plugin is where the risk knowledge lives</li>
+        <li>The open question: why Agent + Plugin, and not putting every analysis into MCP tools the way RBC Assist Pro does?</li>
+        <li>Session 2's two questions, back on screen
           <ul>
-            <li>One plugin per product (for example, FX Option)</li>
-            <li>One skill per metric inside it (today Stress P&amp;L; VaR and Sensitivities are possible next)</li>
-            
-            <li>MCP configuration for the data sources that product needs</li>
-            <li>Shared knowledge does not sit inside a plugin. It sits in the parent folder of the plugins and is shared by all of them.</li>
+            <li>How do we keep the context small? Session 2 showed half of it in the run. Today we see every part of it.</li>
+            <li>How much effort does it take to add a new analysis? Session 2 didn't answer it. Today's answer: a skill, a script and a query.</li>
           </ul>
         </li>
-        <li>Plugin and agent are decoupled (a short reminder; the full message is on the Why Agent + Plugin slide)
+        <li>Two answers to look for on every slide: Expansion and Context</li>
+      </ul>
+    </article>
+
+    <article class="slide">
+      <div class="slide-head"><h3>Plugin Introduction</h3><span class="tags"><span class="tag info">Static infographic</span><span class="tag exp">Expansion</span></span></div>
+      <p class="format">Static infographic with a short zoom-in. Zoom from the lit outer ring into the plugins folder: three real plugins, then one skill opens. The three things a Risk Manager writes appear last, with where each one lives.</p>
+      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>In the Agent SDK: &ldquo;Through the Agent SDK, you can programmatically load plugins from local directories to add capabilities to your agent sessions. A plugin can include: Skills &hellip; Agents &hellip; Hooks &hellip; MCP servers&rdquo; <a href="https://code.claude.com/docs/en/agent-sdk/plugins" target="_blank" rel="noopener">Agent SDK, Plugins in the SDK</a></li><li>Plugin structure: <code>.mcp.json</code> holds the &ldquo;MCP server definitions&rdquo;. <a href="https://code.claude.com/docs/en/agent-sdk/plugins" target="_blank" rel="noopener">Agent SDK, Plugin structure reference</a></li><li>Same definition as Session 2's Business Plugin card (&ldquo;&hellip; that the Claude Agent SDK loads as one unit&rdquo;). The first sentence of the SDK page mentions Claude Code, so don't quote it.</li></ul></div>
+      <div class="label">Bullets</div>
+      <ul>
+        <li>Why we introduce plugins: Risk Managers work on the plugin side, and all business knowledge reaches the agent through plugins</li>
+        <li>What is in a RiskMind plugin
           <ul>
-            <li>The agent only needs to be pointed at the plugin folder</li>
-            <li>Adding or changing a plugin does not touch the agent, so a Local Risk Manager only needs to know how a plugin works</li>
+            <li>One plugin per product: FX Option, Muni, IG Canada</li>
+            <li>One skill per analysis inside it (today Stress P&amp;L; VaR and What-if Analysis next, as in Session 1's "Expand to More Analyses")</li>
+            <li>MCP configuration (<code>.mcp.json</code>): only the address of the MCP Gateway. The gateway routes each call and checks access, so a plugin never holds database details.</li>
+          </ul>
+        </li>
+        <li>What a Risk Manager writes, and where it lives
+          <ul>
+            <li>SKILL.md: the analysis in plain English (in the plugin)</li>
+            <li>Scripts: the calculation, as command-line tools (in the plugin, inside the skill)</li>
+            <li>Query catalog entries: which data the analysis needs (in the data server's catalog, not in the plugin; Risk Managers add these themselves going forward)</li>
+          </ul>
+        </li>
+        <li>Plugin and agent are decoupled (a short reminder; Session 2 covered it)
+          <ul>
+            <li>The agent is only pointed at the plugin folder. Adding or changing a plugin doesn't touch the agent, so a Risk Manager only needs to know how a plugin works.</li>
+            <li>This is the AI runtime kept apart from the business knowledge</li>
           </ul>
         </li>
         <li>Why a plugin and not standalone skills
           <ul>
-            <li>Distribution: all metrics of a product ship together as one unit</li>
-            <li>One picture: business knowledge (skills) and data access (MCP) live in the same unit</li>
-            <li>Write once, refer many: the shared reference folder in the parent folder of the plugins holds what all products share, such as the enterprise scenario descriptions, the shock definitions, and the top-down analysis process. It is maintained in one place, and each skill says when to refer to which file.</li>
+            <li>Distribution: all analyses of a product ship together as one unit</li>
+            <li>One picture: business knowledge (skills) and the way to the data (the gateway address) live in the same unit</li>
           </ul>
         </li>
+        <li>What all plugins share is not copied into each one. It goes into the Shared Library (its own slide, later).</li>
       </ul>
-      <div class="label">Folder tree (content labels only)</div>
-      <div class="table-scroll"><pre style="margin:0;padding:12px 14px;font-family:var(--font-mono);font-size:13px;line-height:1.5;">plugins/                         parent folder of all plugins
-├── reference/                   shared knowledge, used by all plugins
-│   ├── enterprise scenario descriptions
-│   ├── shock definitions
-│   └── top-down analysis process
-├── fx-option/                   plugin, one per product
+      <div class="label">Folder tree (real names)</div>
+      <div class="table-scroll"><pre class="code">plugins/                              all business plugins, one repository
+├── fxo-plugin/                       plugin, one per product
 │   ├── skills/
-│   │   ├── stress-pnl/          one skill per metric
-│   │   ├── var/                 (planned)
-│   │   └── sensitivities/       (planned)
-│   └── MCP configuration        data sources this product needs
-├── muni/
-└── ig-canada/</pre></div>
+│   │   └── fxo-stress-pnl/           skill, one per analysis (VaR, What-if Analysis next)
+│   └── .mcp.json                     MCP Gateway address only
+├── gsp-muni-plugin/
+│   └── skills/gsp-muni-stress-pnl/
+└── gsp-ig-ca-plugin/
+    └── skills/gsp-ig-ca-stress-pnl/</pre></div>
       <div class="key">
         <div class="label">Speaker notes (not on the slide)</div>
-        MCP and data sources are owned by the Agent Serving Team. Skills and the shared reference folder are what Local Risk Managers write and maintain.
+        AiXel builds and runs the MCP Gateway, the MCP servers and the data connections. Risk Managers write the skills and their scripts, and add the queries their analyses need to the query catalog.
       </div>
     </article>
+
     <article class="slide">
-      <div class="slide-head"><h3>Skill Introduction<span class="subtitle">Components</span></h3><span class="tag info">Static infographic</span></div>
-      <p class="format">Built up piece by piece. Start with the skill as a folder, then each component appears in turn: SKILL.md (meta, then detail), scripts, references. The last frame shows the arrows from SKILL.md to scripts and references.</p>
-      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Agent Skills: &ldquo;organized folders of instructions, scripts, and resources that agents can discover and load dynamically to perform better at specific tasks&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li><li>Bundled files: &ldquo;skills can bundle additional files within the skill directory and reference them by name from SKILL.md. These additional linked files are the third level (and beyond) of detail, which Claude can choose to navigate and discover only as needed.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li><li>Code: &ldquo;Skills can also include code for Claude to execute as tools at its discretion.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li></ul></div>
+      <div class="slide-head"><h3>SKILL.md<span class="subtitle">What a Skill Says, and How the Agent Follows It</span></h3><span class="tags"><span class="tag anim">Animation</span><span class="tag exp">Expansion</span><span class="tag ctx">Context</span></span></div>
+      <p class="format">Merges the old "Skill Introduction" and "Walk Through One Real Example". Left: the real <code>fxo-stress-pnl</code> SKILL.md, folded into its five parts. Right: Session 2's run as a row of turns (T1 to T11). Each part of SKILL.md lights up together with the turns it drives, so the audience sees the run from Session 2 again, this time from the skill's side.</p>
+      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Agent Skills: &ldquo;organized folders of instructions, scripts, and resources that agents can discover and load dynamically to perform better at specific tasks&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li><li>Preloading: &ldquo;At startup, the agent pre-loads the name and description of every installed skill into its system prompt.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">same source</a></li><li>Progressive disclosure: &ldquo;Progressive disclosure is the core design principle that makes Agent Skills flexible and scalable.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">same source</a> (first time the name is used in the series)</li></ul></div>
       <div class="label">Bullets</div>
       <ul>
-        <li>What a skill is
+        <li>What a skill is: one analysis for one product (for example, FX Option Stress P&amp;L), written by the Risk Manager as a SKILL.md plus its scripts</li>
+        <li>SKILL.md in five parts (the same skeleton in all three real skills)
           <ul>
-            
-            <li>In RiskMind, one skill is one metric's analysis for one product</li>
-            <li>The Risk Manager writes the whole skill: the analysis process in natural language (SKILL.md), the scripts, and any references</li>
+            <li>Description: what the skill is and when to use it. Real example: use it whenever the user asks about FXO stress, stress P&amp;L, stress explain, or a spot/vol grid.</li>
+            <li>Business Background: what a careful new analyst needs to know. The two dates, the highlight scenario, raw versus display scenario names, BAU = GMRM + Murex add-on, and the Murex cross-check (a gap above $20MM is flagged as a data error).</li>
+            <li>Wording: how to say things. Currency pairs as USD/CAD, "stress profit increase" or "stress loss decrease", never "day-over-day".</li>
+            <li>Analysis Steps, the same five for every flow: fetch the data through MCP, run the analysis script, write the commentary, build the figures, render the report</li>
+            <li>Flows: the ways the skill is used. Portfolio Analysis, Detail Analysis, and Ad-hoc (in FXO, BAU Investigation). Each flow gives its slash command, its queries, its script command, the sections of the analysis file, and a template for the commentary with instructions for every field.</li>
           </ul>
         </li>
-        <li>SKILL.md, in two layers
-          <ul>
-            <li>Meta: name and description. It tells the agent what the skill is and when to use it.</li>
-            <li>Detail: the body of the file. It describes the analyses (Portfolio Analysis, Drill Down, Ad-hoc), defines the slash command and its parameters, and says which references to read and which scripts to run.</li>
-            <li>Each skill writes only what is specific to its own metric; shared knowledge lives in references</li>
-          </ul>
-        </li>
-        <li>scripts
-          <ul>
-            <li>Python code that does the exact work (data processing, visualization); it lives inside the skill and is written by the Risk Manager as part of the skill</li>
-            <li>Each script is written as a CLI: it has a command-line entry point, takes parameters (for example the file location from the previous step), and writes its output</li>
-            <li>The agent runs it with Bash, so SKILL.md states the command and its parameters</li>
-          </ul>
-        </li>
-        <li>references
-          <ul>
-            <li>Knowledge files the agent reads only when needed</li>
-            <li>Two places: the skill's own folder (specific to one metric, optional) and the shared reference folder in the parent folder of the plugins (shared across all products)</li>
-            <li>SKILL.md states when to read which file and where it is</li>
-          </ul>
-        </li>
-        <li>SKILL.md is the entry point: scripts and references are used because SKILL.md mentions them</li>
+        <li>Each flow also decides what the user gets back: a dashboard (most flows), a card the script builds by itself with no commentary (Muni Trade Analysis), or a short answer in chat (Muni Implied Shock)</li>
+        <li>The rule in every skill: the numbers come from the scripts, not from the LLM. The LLM reads the summary the script writes and writes the words.</li>
       </ul>
-      <div class="label">Folder tree (content labels only)</div>
-      <div class="table-scroll"><pre style="margin:0;padding:12px 14px;font-family:var(--font-mono);font-size:13px;line-height:1.5;">plugins/                             parent folder of all plugins
-├── reference/                       shared across all products
-└── fx-option/                       plugin
-    └── skills/
-        └── stress-pnl/              skill, one per metric
-            ├── SKILL.md             meta (name, description) + detail
-            ├── scripts              CLI scripts
-            └── references           metric-specific knowledge (optional)</pre></div>
+      <div class="label">Walk-through: SKILL.md part → Session 2 turn</div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>SKILL.md part</th><th>Turn in Session 2's run</th><th>What enters the context</th></tr></thead>
+        <tbody>
+          <tr><td>Description</td><td>Before T1</td><td>Only the name and description, with every other skill's</td></tr>
+          <tr><td>Whole SKILL.md</td><td>T1 · Skill</td><td>The steps and rules, once the agent picks this skill</td></tr>
+          <tr><td>Step 1 · queries of the flow</td><td>T2 · MCP <code>get_query_data</code></td><td>8 download links, not the data</td></tr>
+          <tr><td>Step 2 · script command</td><td>T3 · Bash</td><td>Locations of the .md and .json; the script downloads the data itself</td></tr>
+          <tr><td>Step 3 · .md sections, commentary template</td><td>T4 Read · T5 UUID · T6 Write</td><td>The analysis summary, then the LLM's own commentary</td></tr>
+          <tr><td>Step 4 · figures command</td><td>T7 · Bash</td><td>Only the location; the figures are never read</td></tr>
+          <tr><td>Step 5 · render</td><td>T8 to T10 · render-html, emit_turn_output</td><td>render-html's instructions, then the dashboard locations</td></tr>
+        </tbody>
+      </table></div>
+      <div class="key">
+        <div class="label">Context, in three levels</div>
+        The description is always in the context. The body comes in only when the skill is used. The scripts are run, never read: only their output files' locations come back. That is progressive disclosure, and it is why the agent can know every skill without carrying all of them.
+      </div>
       <div class="open-item">
         <div class="label">Open item</div>
-        The structure of the detail layer. It will be refined after the skill restructure, so the slide shows only the two layers and the kinds of content in the detail layer, not a template.
+        The real skill folder also has an <code>IMPLEMENTATION.md</code> (technical notes for developers); not shown unless we decide otherwise. FXO's BAU Investigation still uses its own fetch script (<code>fetch_bau_data.py</code>); not shown.
       </div>
     </article>
-    <article class="slide"><div class="slide-head"><h3>Skill<span class="subtitle">Walk Through One Real Example</span></h3><span class="tag todo">To do</span></div><p class="pending">On hold until the skill restructure is done; it needs a real skill from the restructured version. Use a real skill and play a Context-panel animation (same visual as Agent Introduction). Merged in from the removed "How Agent Work with Skill" slide: before loading, the agent sees only each skill's name and description and picks by description; reference files are read only when the condition in SKILL.md is met; a command and its parameters in SKILL.md become one Bash call.</p>
-      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Preloading: &ldquo;At startup, the agent pre-loads the name and description of every installed skill into its system prompt.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li><li>Progressive disclosure: &ldquo;Progressive disclosure is the core design principle that makes Agent Skills flexible and scalable.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li></ul></div></article>
+
     <article class="slide">
-      <div class="slide-head"><h3>MCP Introduction</h3><span class="tag todo">On hold</span></div>
-      <p class="format">On hold until the query catalog design is confirmed from the code. ATOM MCP is the working example.</p>
-      <div class="label">Confirmed so far</div>
+      <div class="slide-head"><h3>Scripts<span class="subtitle">Turning an Analysis into a Command</span></h3><span class="tags"><span class="tag info">Static infographic</span><span class="tag exp">Expansion</span><span class="tag ctx">Context</span></span></div>
+      <p class="format">Before and after, side by side. Left: a script the way many of us write it today, with the inputs as constants at the top that we edit before every run. Right: the same script as a command, with every input on the command line, and the exact command as it appears in SKILL.md. Then the checklist.</p>
+      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Code: &ldquo;Skills can also include code for Claude to execute as tools at its discretion.&rdquo; <a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener">Anthropic Engineering, Equipping agents for the real world with Agent Skills</a></li></ul></div>
+      <div class="label">Before and after</div>
+      <div class="pair">
+        <div class="table-scroll"><pre class="code"># before: edit the constants, then run
+DATE      = "2026-08-11"
+PREV_DATE = "2026-08-10"
+SCENARIO  = "GLOBALFINANCIALCRISISABS"
+INPUT     = "C:/Users/…/muni_0811.csv"</pre></div>
+        <div class="table-scroll"><pre class="code"># after: every input is an argument (real Muni command)
+uv run ${CLAUDE_SKILL_DIR}/scripts/portfolio_analysis.py \
+  --portfolio-url &lt;link&gt; --prev-portfolio-url &lt;link&gt; \
+  --inventory-url &lt;link&gt; --prev-inventory-url &lt;link&gt; \
+  --scenario &lt;scenario&gt; \
+  --output-path ${TEMP_OUTPUT_DIR}/… \
+  --json-output-path ${TEMP_OUTPUT_DIR}/…</pre></div>
+      </div>
+      <div class="label">Bullets</div>
       <ul>
-        <li>The MCP server today is ATOM</li>
-        <li>Official definition to quote on the slide (verbatim)
+        <li>The agent can't open a file and change a constant. It can only run a command. So every analysis needs one entry script that works as a command, one per flow (Muni: <code>portfolio_analysis.py</code>, <code>detail_analysis.py</code>, <code>trade_analysis.py</code>, <code>implied_shock_analysis.py</code>, plus the figures scripts).</li>
+        <li>What a script needs before an agent can run it
           <ul>
-            <li>MCP docs: &ldquo;MCP (Model Context Protocol) is an open-source standard for connecting AI applications to external systems.&rdquo; and &ldquo;Think of MCP like a USB-C port for AI applications.&rdquo; <a href="https://modelcontextprotocol.io/docs/getting-started/intro" target="_blank" rel="noopener">modelcontextprotocol.io</a></li>
-            <li>Anthropic announcement: &ldquo;an open standard for connecting AI assistants to the systems where data lives&rdquo;. The problem: &ldquo;Every new data source requires its own custom implementation, making truly connected systems difficult to scale&rdquo;. The answer: &ldquo;a universal, open standard for connecting AI systems with data sources, replacing fragmented integrations with a single protocol&rdquo;. <a href="https://www.anthropic.com/news/model-context-protocol" target="_blank" rel="noopener">anthropic.com</a></li>
+            <li>Every input is a command-line argument. Nothing to edit inside the file.</li>
+            <li>The full command, with every argument, is written in SKILL.md, so the agent knows exactly what to type</li>
+            <li>It writes its results to files and prints where they are</li>
+            <li>Two outputs: a .md summary for the LLM to read, and a .json for the next script</li>
+            <li>No human steps: no prompts, no clicking, no opening Excel halfway</li>
+            <li>Helpful errors: if a desk or product isn't found, it lists the valid ones, so the agent can correct itself (Muni Detail does this)</li>
+            <li>No local paths: it uses the skill's own folder and the run's output folder, and runs with uv</li>
+            <li>It reads the data from the download links itself</li>
+            <li>It takes the raw names (scenario, desk) as input; the display names only appear in the output</li>
           </ul>
         </li>
-        <li>How it appears to the agent: as tools it can call in the Agent Loop (MCP tools are not Core Tools, but they are called the same way)</li>
-        <li>Each skill exposes to the agent only the queries that skill needs (stated by the Agent Serving Team)</li>
-        <li>MCP Gateway (built by the Agent Serving Team): every MCP connects to the RiskMind agent through it, giving unified access management and connection</li>
+        <li>Three contracts that must match
+          <ul>
+            <li>The sections SKILL.md describes = the sections the script writes in the .md</li>
+            <li>The column aliases in the query catalog (for example <code>pnlValue</code>, <code>scenarioName</code>) = the columns the script reads</li>
+            <li>The commentary keys in SKILL.md = the keys the figures script expects</li>
+          </ul>
+        </li>
       </ul>
-      <div class="label">To cover on the slide</div>
-      <ul>
-        <li>What MCP is, why we use MCP to connect data, and why we do not use text-to-SQL</li>
-      </ul>
-      <div class="label">Pending</div>
-      <ul>
-        <li>Where the query catalog lives: registered on the MCP server and filtered per skill, or defined in the skill and sent to the MCP by the agent after it reads the skill</li>
-        <li>The reasons for MCP over text-to-SQL</li>
-      </ul>
-      <div class="label">Code check: prompt to run on the company computer</div>
-      <p class="format">Paste this into an agent that has the codebase. It is read-only. Sanitize the answer before bringing it back.</p>
-      <div class="promptbox">
-        <button type="button" class="copybtn" id="copy-prompt">Copy</button>
-        <pre id="code-check-prompt">Please inspect our codebase read-only (do not modify anything, do not run anything that writes data) and answer the questions below about how the ATOM MCP server and the RiskMind skills work together. For every answer, give the file path and a short sanitized code snippet (no secrets, no real data, no internal hostnames).
-
-Context: RiskMind is an agent that runs Skills (in a plugin) and fetches data through an MCP server called ATOM. The Agent Serving Team says each skill exposes to the agent only the queries relevant to that skill. I need to know which of these two designs is the real one:
-
-  Design A: all queries are registered on the MCP server (a query catalog), and the server filters which ones are visible per skill.
-  Design B: the MCP server only offers general tools (for example a "run query" tool), and the query catalog is defined in the skill; the agent reads the skill and sends the query to the MCP to run.
-  (It may also be a mix of the two, or something else. Describe what the code actually does.)
-
-Questions:
-1. Where is the query catalog defined? Give the file(s) and the format (for example yaml, json, python dict, SQL files). Is it on the MCP server side, in the skill / plugin folder, or both?
-2. What tools does the ATOM MCP server expose to the agent? List each tool's name, its parameters, and what it returns.
-3. How is "each skill sees only its own queries" implemented? Is it a filter on the server, a parameter the agent passes, a naming convention, an allowlist, or something else? Which component decides which queries a skill may run?
-4. When the agent fetches data, what exactly does it send to the MCP: a query name or ID plus parameters, or SQL text? Show a real example of the call shape (with fake values).
-5. What does the MCP return? In the Portfolio Analysis pipeline the data is saved to a folder and the MCP returns the file location. Show where that happens in the code.
-6. To add queries for a new product, which files must be changed, by whom, and does the MCP server need to be redeployed or restarted?
-7. How does the MCP Gateway sit in the path between the RiskMind agent and the ATOM MCP server? What does it do in the code or config (authentication, routing, access control)? If the gateway code is not in this repo, say so.
-
-At the end, give me a 5-line summary: which design (A, B, or mixed) is the real one, where the query catalog lives, and what a Local Risk Manager would have to change to add a new product.</pre>
+      <div class="key">
+        <div class="label">The point</div>
+        A command run through Bash takes the place of registering a new tool. A new analysis needs no new tool, no change to the MCP server, and no redeploy. And because the script reads the data and writes a short summary, the data never passes through the LLM.
       </div>
+    </article>
+
+    <article class="slide">
+      <div class="slide-head"><h3>What MCP Is<span class="subtitle">A Standard Way to Give an Agent Tools</span></h3><span class="tags"><span class="tag info">Static infographic</span><span class="tag exp">Expansion</span><span class="tag ctx">Context</span></span></div>
+      <p class="format">Start with a one-line recap of what a tool is (defined in Session 2, beat 3), and where the agent's tools come from. Then the common belief, "MCP is a data connection", corrected row by row. Then the two MCP servers RiskMind actually uses, side by side. End with the contrast to Session 2's beat 3: the same analyses built as MCP tools.</p>
+      <div class="official"><div class="label">Official definitions (verbatim, with sources)</div><ul><li>Specification: &ldquo;The Model Context Protocol (MCP) allows servers to expose tools that can be invoked by language models.&rdquo; and &ldquo;Tools enable models to interact with external systems, such as querying databases, calling APIs, or performing computations.&rdquo; <a href="https://modelcontextprotocol.io/specification/2025-06-18/server/tools" target="_blank" rel="noopener">MCP specification, Tools</a></li><li>Server concepts: &ldquo;MCP servers are programs that expose specific capabilities to AI applications through standardized protocol interfaces.&rdquo; Tools are &ldquo;Functions that your LLM can actively call, and decides when to use them based on user requests.&rdquo; <a href="https://modelcontextprotocol.io/docs/learn/server-concepts" target="_blank" rel="noopener">modelcontextprotocol.io, Understanding MCP servers</a></li><li>Dropped: the Anthropic announcement's &ldquo;systems where data lives&rdquo; and &ldquo;data sources&rdquo; wording. It reinforces the misunderstanding this slide corrects.</li></ul></div>
+      <div class="label">First, what a tool is (recap from Session 2)</div>
+      <p class="tight">Something the LLM can ask for but can't do itself. Each tool has a name, a description and the inputs it takes. The LLM only asks; the system runs it, and the result comes back into the context.</p>
+      <div class="label">Where the agent's tools come from, and what is not a tool</div>
+      <div class="table-scroll"><table>
+        <thead><tr><th></th><th>What it is</th><th>Where it comes from</th></tr></thead>
+        <tbody>
+          <tr><td>Core Tools</td><td>Skill, Bash, Read, Edit, Write</td><td>Built into the SDK</td></tr>
+          <tr><td>MCP tools</td><td><code>get_query_data</code>, <code>emit_turn_output</code></td><td>Offered by an MCP server</td></tr>
+          <tr><td>A skill</td><td>Not a tool. A set of instructions.</td><td>Loaded by the Skill tool (Session 2's T1)</td></tr>
+          <tr><td>A script</td><td>Not a tool. A command.</td><td>Run by the Bash tool (Session 2's T3)</td></tr>
+        </tbody>
+      </table></div>
+      <p class="legend">The Skill tool and a skill are easy to mix up: the tool is the one call that loads it; the skill is what gets loaded. MCP is just one of the two places tools come from.</p>
+      <div class="label">Common belief → what it actually is</div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>What people think</th><th>What it actually is</th></tr></thead>
+        <tbody>
+          <tr><td>MCP is a data connection</td><td>MCP is a standard way of giving an agent tools. Fetching data is one thing a tool can do.</td></tr>
+          <tr><td>MCP is only for data</td><td><code>emit_turn_output</code> is an MCP tool that shows the dashboard in the chat panel. It has nothing to do with data.</td></tr>
+          <tr><td>MCP lets the agent into the database</td><td>The agent can only call the tools a server offers. Our data server offers two, and neither takes SQL.</td></tr>
+          <tr><td>Each new data set needs a new MCP tool</td><td>One tool, many queries. A new data set is a new entry in the query catalog.</td></tr>
+          <tr><td>MCP hands the data to the LLM</td><td>Our data tool returns download links. The data goes to the script, not into the context.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="label">Bullets</div>
+      <ul>
+        <li>Bridge from Session 1: there we called it the "data connection", because that's what we use it for today. What MCP is, is a standard plug for tools.</li>
+        <li>MCP tools are called in the agent loop exactly like the Core Tools (Session 2's T2 and T10)</li>
+        <li>The two MCP servers in RiskMind
+          <ul>
+            <li>Built into the backend: <code>emit_turn_output</code>. It ships with RiskMind and is always available; it just reaches the agent through MCP.</li>
+            <li>The data server, ATOM MCP: <code>get_query_data</code> and <code>list_queries</code>. Skills only use <code>get_query_data</code>. Reached through the MCP Gateway, whose address is all a plugin holds.</li>
+          </ul>
+        </li>
+        <li>The other way to build it: every analysis as its own MCP tool, as in Session 2's beat 3 (<code>fxo_portfolio(date)</code>, <code>fxo_drill_down(date, by)</code>, <code>muni_adhoc</code> …). That is how RBC Assist Pro works.
+          <ul>
+            <li><span class="tag exp">Expansion</span> Every new analysis means developing, registering, hosting and deploying a tool</li>
+            <li><span class="tag ctx">Context</span> Every tool's definition sits in the context, used or not, and servers are switched off by hand to keep it small</li>
+            <li>RiskMind keeps MCP tools few and general, and puts the analyses in skills</li>
+          </ul>
+        </li>
+      </ul>
+    </article>
+
+    <article class="slide">
+      <div class="slide-head"><h3>MCP Gateway, Tools and the Query Catalog<span class="subtitle">How the Agent Reaches the Data</span></h3><span class="tags"><span class="tag anim">Animation</span><span class="tag exp">Expansion</span><span class="tag ctx">Context</span></span></div>
+      <p class="format">Trace one real query end to end, left to right: SKILL.md → Agent → MCP Gateway → ATOM MCP server → query catalog → database, and back. Use <code>GSP_MUNI_POSITIONS_STRESS</code> (Muni Detail Analysis). Then a table of the layers, and one catalog entry redrawn with notes.</p>
+      <div class="label">The trace</div>
+      <ol class="flow">
+        <li><b>SKILL.md</b>names the query for the flow: <code>GSP_MUNI_POSITIONS_STRESS</code>, once per date</li>
+        <li><b>Agent</b>calls <code>get_query_data(query_name, date)</code></li>
+        <li><b>MCP Gateway</b>checks the user's AD groups. No match, the call stops here.</li>
+        <li><b>ATOM MCP server</b>looks the name up in the catalog and runs that query for that date</li>
+        <li><b>Back to the agent</b>a download link, the row count, any pending dates, a message. The script downloads through the gateway, which checks access again.</li>
+      </ol>
+      <p class="legend">The query returns the whole grid for the desks; the script filters what it needs. The same links are reused across flows ("do not re-fetch").</p>
+      <div class="label">The layers</div>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Layer</th><th>What it is</th><th>Who builds it</th><th>What a Risk Manager does with it</th></tr></thead>
+        <tbody>
+          <tr><td>MCP Gateway</td><td>The single front door. Checks every call and every download against the user's existing permissions.</td><td>AiXel</td><td>Nothing. The plugin's <code>.mcp.json</code> holds its address.</td></tr>
+          <tr><td>MCP tools</td><td>Two tools on the ATOM MCP server: <code>get_query_data</code> runs a named query for a date; <code>list_queries</code> lists what exists</td><td>AiXel</td><td>Names the query in SKILL.md. The agent makes the call.</td></tr>
+          <tr><td>Query catalog</td><td>YAML files of named, reviewed queries, roughly one file per product group (FXO, GSP)</td><td>Risk Managers, going forward</td><td>Adds an entry when an analysis needs new data. Reviewed like code.</td></tr>
+          <tr><td>Database</td><td>ATOM</td><td>Existing</td><td>Never touched directly</td></tr>
+        </tbody>
+      </table></div>
+      <div class="key">
+        <div class="label">In one line</div>
+        The tool is how, the catalog is what. One tool, many queries.
+      </div>
+      <div class="label">One catalog entry (redrawn; no author names on screen)</div>
+      <div class="table-scroll"><pre class="code">GSP_MUNI_POSITIONS_STRESS:              # the name SKILL.md uses
+  # replaces the old fetch function (fetch_position_stress)
+  description: "…which skill and flow uses it…"
+  group_name: GSP                       # grouped roughly by product
+  fabric: …                             # the ATOM data set
+  analytic_id: "__ALL__"
+  dim_filters:
+    category: [ … ]
+    scenario: [ … ]
+    where: bookStatus IN ('ACTIVE','REPORTING'), regulatoryType = 'Trading_HFT', excluded books …
+  selects:
+    - pnl.pnl As pnlValue                # the alias is the column the script reads
+    - pnl.scenario As scenarioName
+    - …
+  nodes: [ … ]                           # the desks
+  hierarchy: FINANCE_80000
+  split_by: nodes
+# no date in the entry: the date comes with each call</pre></div>
+      <div class="label">Why a catalog and not text-to-SQL (AiXel's governance list)</div>
+      <ul>
+        <li>Traceability: every number traces back to a reviewed script and a named query</li>
+        <li>Least privilege: the agent can only run queries someone added to the catalog</li>
+        <li>Entitlement-based access: the agent inherits the user's existing permissions, never broader ones</li>
+        <li>Reproducibility: the same skill with the same dates gives the same numbers</li>
+        <li>Auditability: SKILL.md and the catalog are plain text in version control. Every catalog change is a commit tied to a ticket, so "what data could the agent get, and since when?" has a written answer.</li>
+      </ul>
+      <div class="label">Left out on purpose</div>
+      <ul>
+        <li><code>group_name</code> in depth: grouped roughly by product, with some groups combined. Not covered.</li>
+        <li><code>list_queries</code>: exists, but no skill uses it</li>
+        <li>Per-skill query filtering on the server: not implemented. The skill names the exact query instead.</li>
+        <li>Repository names, FastAPI/FastMCP, LDAP and config file names: too technical for the audience</li>
+      </ul>
+    </article>
+
+    <article class="slide">
+      <div class="slide-head"><h3>Writing a Skill<span class="subtitle">A Checklist</span></h3><span class="tags"><span class="tag info">Static infographic</span><span class="tag exp">Expansion</span></span></div>
+      <p class="format">A checklist, each item with one real line from the three skills next to it. Proposed list, to review.</p>
+      <div class="table-scroll"><table>
+        <thead><tr><th>Check</th><th>Real example</th></tr></thead>
+        <tbody>
+          <tr><td>1 · The description says when to use it, in the user's words</td><td>FXO: "FXO stress, stress P&amp;L, stress explain, spot/vol grid"</td></tr>
+          <tr><td>2 · Write the background a careful new analyst would need</td><td>BAU = GMRM + Murex add-on; a Murex gap above $20MM is a data error</td></tr>
+          <tr><td>3 · Fix the wording</td><td>USD/CAD; "stress profit increase"; never "day-over-day"</td></tr>
+          <tr><td>4 · Define the command and its inputs, and what to do when one is missing</td><td><code>/gsp-muni-stress-pnl &lt;date&gt; &lt;prev-date&gt; [scenario]</code>; dates as YYYY-MM-DD; ask, never guess</td></tr>
+          <tr><td>5 · Name the exact queries for each flow</td><td>Muni Portfolio: GSP_MUNI_PRODUCT_STRESS and GSP_MUNI_INVENTORY, for both dates; reuse the links, don't re-fetch</td></tr>
+          <tr><td>6 · Give the full script command for each flow</td><td><code>portfolio_analysis.py --portfolio-url … --scenario …</code></td></tr>
+          <tr><td>7 · Lay out the output and how to write each part</td><td>Name 2–3 movers in the direction of the total; flag the ones going the other way</td></tr>
+          <tr><td>8 · Say what the LLM must not do</td><td>No arithmetic. Never infer a scenario for Implied Shock. No commentary when the card is the answer.</td></tr>
+        </tbody>
+      </table></div>
+    </article>
+
+    <article class="slide">
+      <div class="slide-head"><h3>Shared Library<span class="subtitle">What the Three Skills Have in Common</span></h3><span class="tags"><span class="tag todo">Waiting for details</span><span class="tag exp">Expansion</span><span class="tag ctx">Context</span></span></div>
+      <p class="format">Comes after one complete skill has been taught. The three SKILL.md files side by side; the parts that are the same light up together and lift out into one place.</p>
+      <div class="label">Bullets</div>
+      <ul>
+        <li>What we found in all three skills: the purpose and period-over-period paragraph, the raw/display name rules, the date rules, the command signature, analysis steps 3 to 5, the order for choosing a scenario in Detail, and the commentary patterns</li>
+        <li>So we built a Shared Library: shared knowledge and shared code, packaged as one installable package</li>
+        <li>Where it lives: next to the plugins, but not read from there. It is installed into the agent's environment, and the skills use it from there.</li>
+        <li>How a skill uses the shared knowledge: one line in SKILL.md pulls it in when the skill loads. The agent sees one complete SKILL.md, with no extra turn to read another file (Session 2's T1 stays one call).</li>
+        <li>Write once, use everywhere: a fix to a shared rule reaches every product's skill</li>
+      </ul>
+      <div class="open-item">
+        <div class="label">Waiting for</div>
+        Exactly which parts move into the Shared Library, and the paths, from the team. Then: a before/after of one SKILL.md section, and a picture of where the package sits.
+      </div>
+    </article>
+
+    <article class="slide">
+      <div class="slide-head"><h3>Takeaways<span class="subtitle">The Answer to the Opening Question</span></h3><span class="tags"><span class="tag skip">Later</span><span class="tag exp">Expansion</span><span class="tag ctx">Context</span></span></div>
+      <p class="format">Answers "Why Agent + Plugin?" with the two comparisons below. Format and the frame slides (cover, course page, end card, as in Sessions 1 and 2) come later.</p>
+      <div class="label">Expansion · adding a new analysis</div>
+      <div class="table-scroll"><table>
+        <thead><tr><th></th><th>Analysis as an MCP tool (RBC Assist Pro)</th><th>Skill + query (RiskMind)</th></tr></thead>
+        <tbody>
+          <tr><td>What to write</td><td>A new tool, in code</td><td>A SKILL.md in plain English, a command-line script, a catalog entry</td></tr>
+          <tr><td>What else to do</td><td>Develop, register, host and deploy the tool</td><td>Nothing else: the skill sits in the plugin; the catalog entry is reviewed like code</td></tr>
+          <tr><td>What to know</td><td>MCP development, tool registration, hosting</td><td>The analysis itself, a Python script, a YAML entry</td></tr>
+          <tr><td>Data</td><td>Each tool fetches its own data</td><td>One tool, many queries</td></tr>
+          <tr><td>Runtime vs knowledge</td><td>Separated through MCP</td><td>Separated through plugins and skills</td></tr>
+        </tbody>
+      </table></div>
+      <div class="label">Context · keeping it small</div>
+      <div class="table-scroll"><table>
+        <thead><tr><th></th><th>RBC Assist Pro</th><th>RiskMind</th></tr></thead>
+        <tbody>
+          <tr><td>Tool definitions</td><td>Every analysis tool is in the context; servers are switched off by hand</td><td>A few general tools; skills are only a name and a description until used</td></tr>
+          <tr><td>Instructions</td><td>No skills</td><td>Progressive disclosure: description, then SKILL.md, scripts run but never read</td></tr>
+          <tr><td>Data</td><td>Comes back into the context in full</td><td>Only download links; the script downloads the data</td></tr>
+          <tr><td>Calculation</td><td>The LLM works over the returned data</td><td>Scripts calculate; the LLM reads a short summary; figures are never read</td></tr>
+        </tbody>
+      </table></div>
     </article>
   </section>
 </div>
-
-<script>
-(function () {
-  var btn = document.getElementById('copy-prompt');
-  var src = document.getElementById('code-check-prompt');
-  if (!btn || !src) return;
-  function selectText() {
-    var r = document.createRange(); r.selectNodeContents(src);
-    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
-  }
-  btn.addEventListener('click', function () {
-    var done = function (ok) {
-      btn.textContent = ok ? 'Copied' : 'Press Ctrl/Cmd+C';
-      setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
-    };
-    try {
-      navigator.clipboard.writeText(src.textContent).then(function () { done(true); }, function () { selectText(); done(false); });
-    } catch (e) { selectText(); done(false); }
-  });
-})();
-</script>
 
 </body></html>
